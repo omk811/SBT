@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>منصة رصد السلوكيات الطلابية - وفق لائحة شؤون الطلبة</title>
+    <title>نظام رصد السلوكيات الطلابية - وفق لائحة شؤون الطلبة</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
@@ -404,74 +404,67 @@
         }
 
         @media print {
+            /* إخفاء كل شيء ما عدا التقرير */
             body {
-                background: white;
-                padding: 20px;
-                margin: 0;
-            }
-            
-            #loginPage {
-                display: none !important;
-            }
-            
-            header {
                 background: white !important;
-                color: black !important;
-                border: 2px solid var(--primary);
-                page-break-after: avoid;
-                margin-bottom: 15px;
-                padding: 20px;
+                padding: 0 !important;
+                margin: 0 !important;
             }
             
-            header h1, header p {
-                color: var(--primary) !important;
-                text-shadow: none !important;
-            }
-            
-            header::before {
-                display: none;
-            }
-            
-            .section-card {
-                border: 1px solid #ddd;
-                box-shadow: none;
-                page-break-inside: avoid;
-                margin-bottom: 15px;
-                padding: 15px;
-            }
-            
-            .buttons-row, #studentsSection {
+            #loginPage,
+            header,
+            .section-card,
+            .buttons-row,
+            #studentsSection,
+            .container > *:not(#reportOutput) {
                 display: none !important;
+            }
+            
+            .container {
+                max-width: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
             }
             
             #reportOutput {
                 display: block !important;
-                border: 2px solid var(--primary);
-                box-shadow: none;
-                page-break-inside: avoid;
-                padding: 20px;
-                margin-top: 15px;
+                border: none !important;
+                box-shadow: none !important;
+                padding: 20mm !important;
+                margin: 0 !important;
+                background: white !important;
+                page-break-inside: avoid !important;
+                height: auto !important;
+                font-size: 11pt !important;
+                line-height: 1.6 !important;
             }
             
-            .behavior-category {
-                page-break-inside: avoid;
-                margin-bottom: 10px;
-                padding: 10px;
+            .report-header {
+                border-bottom: 2px solid #000 !important;
+                padding-bottom: 10px !important;
+                margin-bottom: 15px !important;
             }
             
-            .section-title {
-                font-size: 1.3rem;
-                page-break-after: avoid;
+            .report-title {
+                font-size: 18pt !important;
+                color: #000 !important;
+                margin-bottom: 5px !important;
             }
             
-            /* ضمان طباعة كل شيء في صفحة واحدة */
-            * {
-                page-break-inside: avoid;
+            .report-subtitle {
+                font-size: 10pt !important;
+                color: #333 !important;
             }
             
+            /* ضمان طباعة صفحة واحدة فقط */
             @page {
-                size: A4;
+                size: A4 portrait;
                 margin: 15mm;
+            }
+            
+            * {
+                color-adjust: exact !important;
+                -webkit-print-color-adjust: exact !important;
             }
         }
 
@@ -648,7 +641,7 @@
     
     <div class="container">
         <header>
-            <h1>🎓 منصة رصد السلوكيات الطلابية</h1>
+            <h1>🎓 نظام رصد السلوكيات الطلابية</h1>
             <p>وفقًا للائحة شؤون الطلبة - القرار الوزاري رقم 2017/234</p>
         </header>
 
@@ -1047,55 +1040,119 @@
                 return;
             }
 
-            let report = `
-╔════════════════════════════════════════════════════════════════╗
-║                   تقرير السلوك الطلابي اليومي                   ║
-║              وفقًا للائحة شؤون الطلبة - القرار 2017/234         ║
-╚════════════════════════════════════════════════════════════════╝
+            const formattedDate = new Date(date).toLocaleDateString('ar-EG', {
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric'
+            });
 
-📅 التاريخ: ${new Date(date).toLocaleDateString('ar-EG', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})}
-🏫 الشعبة: ${className || 'غير محدد'}
-👤 اسم الطالب: ${studentName}
+            // تقرير مختصر ومركز في صفحة واحدة
+            let reportHTML = `
+<div style="border: 3px double #1a4d2e; padding: 25px; background: white; font-family: 'Cairo', sans-serif;">
+    <div class="report-header" style="text-align: center; border-bottom: 3px solid #1a4d2e; padding-bottom: 15px; margin-bottom: 20px;">
+        <div style="margin-bottom: 10px;">
+            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%231a4d2e'/%3E%3Ctext x='50' y='65' font-size='50' text-anchor='middle' fill='white' font-family='Arial'%3E🎓%3C/text%3E%3C/svg%3E" alt="شعار" style="width: 60px; height: 60px;">
+        </div>
+        <h1 style="font-family: 'Amiri', serif; color: #1a4d2e; font-size: 24pt; margin: 10px 0; font-weight: bold;">
+            تقرير السلوك الطلابي
+        </h1>
+        <p style="color: #666; font-size: 11pt; margin: 5px 0;">
+            وفقًا للائحة شؤون الطلبة بالمدارس الحكومية - القرار الوزاري رقم 2017/234
+        </p>
+    </div>
 
-─────────────────────────────────────────────────────────────────
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11pt;">
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; background: #f8f9fa; font-weight: 600; width: 25%;">📅 التاريخ:</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${formattedDate}</td>
+            <td style="padding: 8px; border: 1px solid #ddd; background: #f8f9fa; font-weight: 600; width: 25%;">🏫 الشعبة:</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${className || 'غير محدد'}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; background: #f8f9fa; font-weight: 600;">👤 اسم الطالب:</td>
+            <td colspan="3" style="padding: 8px; border: 1px solid #ddd; font-weight: 700; color: #1a4d2e;">${studentName}</td>
+        </tr>
+    </table>
 
-📋 السلوكيات المخالفة المرصودة:
-`;
+    <div style="margin-bottom: 20px;">
+        <h3 style="background: #1a4d2e; color: white; padding: 10px 15px; margin: 0 0 10px 0; border-radius: 5px; font-size: 13pt;">
+            📋 السلوكيات المخالفة المرصودة:
+        </h3>
+        <ul style="margin: 0; padding-right: 25px; line-height: 2;">`;
 
             behaviors.forEach((behavior, index) => {
                 const level = getBehaviorLevel(behavior);
                 let badge = '';
-                if (level === 1) badge = '[نصح]';
-                else if (level === 2) badge = '[تنبيه]';
-                else badge = '[إنذار]';
+                let badgeColor = '';
                 
-                report += `\n   ${index + 1}. ${badge} ${behavior}`;
+                if (level === 1) {
+                    badge = 'نصح';
+                    badgeColor = '#0277bd';
+                } else if (level === 2) {
+                    badge = 'تنبيه';
+                    badgeColor = '#f57c00';
+                } else {
+                    badge = 'إنذار';
+                    badgeColor = '#c1292e';
+                }
+                
+                reportHTML += `
+            <li style="margin-bottom: 8px;">
+                <span style="background: ${badgeColor}; color: white; padding: 3px 10px; border-radius: 4px; font-size: 9pt; font-weight: 600; margin-left: 8px;">${badge}</span>
+                <span style="font-weight: 500;">${behavior}</span>
+            </li>`;
             });
 
+            reportHTML += `
+        </ul>
+    </div>`;
+
             if (notes) {
-                report += `\n\n─────────────────────────────────────────────────────────────────\n\n📝 الملاحظات والتفاصيل:\n${notes}`;
+                reportHTML += `
+    <div style="margin-bottom: 20px;">
+        <h3 style="background: #4f9d69; color: white; padding: 10px 15px; margin: 0 0 10px 0; border-radius: 5px; font-size: 13pt;">
+            📝 الملاحظات والتفاصيل:
+        </h3>
+        <div style="padding: 12px; background: #f8f9fa; border-right: 4px solid #4f9d69; border-radius: 5px; line-height: 1.8;">
+            ${notes.replace(/\n/g, '<br>')}
+        </div>
+    </div>`;
             }
 
             if (action) {
-                report += `\n\n─────────────────────────────────────────────────────────────────\n\n⚖️ الإجراء المتخذ: ${action}`;
+                reportHTML += `
+    <div style="margin-bottom: 20px;">
+        <h3 style="background: #d4af37; color: white; padding: 10px 15px; margin: 0 0 10px 0; border-radius: 5px; font-size: 13pt;">
+            ⚖️ الإجراء المتخذ:
+        </h3>
+        <div style="padding: 12px; background: #fffbf0; border: 2px solid #d4af37; border-radius: 5px; font-weight: 600;">
+            ${action}
+        </div>
+    </div>`;
             }
 
-            report += `\n\n─────────────────────────────────────────────────────────────────\n\n📌 المرجع القانوني:
-• لائحة شؤون الطلبة بالمدارس الحكومية
-• القرار الوزاري رقم 2017/234
-• المادة (39) - إجراءات ضبط السلوك الطلابي
+            reportHTML += `
+    <div style="border-top: 2px solid #ddd; padding-top: 15px; margin-top: 20px;">
+        <p style="font-size: 9pt; color: #666; margin: 5px 0; line-height: 1.6;">
+            <strong>المرجع القانوني:</strong> لائحة شؤون الطلبة بالمدارس الحكومية - القرار الوزاري رقم 2017/234 - المادة (39)
+        </p>
+    </div>
 
-─────────────────────────────────────────────────────────────────
-
-التوقيع: _______________          التاريخ: _______________
-
-`;
+    <div style="margin-top: 30px; display: flex; justify-content: space-between;">
+        <div style="text-align: center; width: 45%;">
+            <div style="border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 8px; min-height: 50px;"></div>
+            <p style="margin: 0; font-weight: 600; font-size: 10pt;">توقيع المعلم</p>
+        </div>
+        <div style="text-align: center; width: 45%;">
+            <div style="border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 8px; min-height: 50px;"></div>
+            <p style="margin: 0; font-weight: 600; font-size: 10pt;">توقيع ولي الأمر</p>
+        </div>
+    </div>
+</div>`;
 
             const reportDiv = document.getElementById('reportOutput');
-            reportDiv.innerHTML = `<div class="report-header">
-                <div class="report-title">تقرير السلوك الطلابي</div>
-                <div class="report-subtitle">وفقًا للائحة شؤون الطلبة</div>
-            </div>` + report.replace(/\n/g, '<br>');
+            reportDiv.innerHTML = reportHTML;
             reportDiv.classList.add('show');
 
             showToast('✅ تم إنشاء التقرير بنجاح');
