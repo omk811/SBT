@@ -416,6 +416,7 @@
             .section-card,
             .buttons-row,
             #studentsSection,
+            #toast,
             .container > *:not(#reportOutput) {
                 display: none !important;
             }
@@ -430,41 +431,27 @@
                 display: block !important;
                 border: none !important;
                 box-shadow: none !important;
-                padding: 20mm !important;
+                padding: 0 !important;
                 margin: 0 !important;
                 background: white !important;
                 page-break-inside: avoid !important;
+                page-break-after: avoid !important;
                 height: auto !important;
-                font-size: 11pt !important;
-                line-height: 1.6 !important;
             }
             
-            .report-header {
-                border-bottom: 2px solid #000 !important;
-                padding-bottom: 10px !important;
-                margin-bottom: 15px !important;
-            }
-            
-            .report-title {
-                font-size: 18pt !important;
-                color: #000 !important;
-                margin-bottom: 5px !important;
-            }
-            
-            .report-subtitle {
-                font-size: 10pt !important;
-                color: #333 !important;
+            #reportOutput * {
+                page-break-inside: avoid !important;
             }
             
             /* ضمان طباعة صفحة واحدة فقط */
             @page {
                 size: A4 portrait;
-                margin: 15mm;
+                margin: 10mm;
             }
             
-            * {
-                color-adjust: exact !important;
-                -webkit-print-color-adjust: exact !important;
+            html, body {
+                height: auto !important;
+                overflow: visible !important;
             }
         }
 
@@ -775,7 +762,10 @@
                 🖨️ طباعة التقرير
             </button>
             <button class="btn btn-success" onclick="shareWhatsApp()">
-                📱 مشاركة عبر واتساب
+                📱 إرسال عبر واتساب
+            </button>
+            <button class="btn btn-success" onclick="shareWhatsAppToNumber()" style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);">
+                📞 إرسال لرقم محدد
             </button>
             <button class="btn btn-warning" onclick="saveData()">
                 💾 حفظ البيانات
@@ -1041,114 +1031,95 @@
             }
 
             const formattedDate = new Date(date).toLocaleDateString('ar-EG', {
-                weekday: 'long', 
                 year: 'numeric', 
-                month: 'long', 
-                day: 'numeric'
+                month: '2-digit', 
+                day: '2-digit'
             });
 
-            // تقرير مختصر ومركز في صفحة واحدة
+            // تقرير مختصر جداً في صفحة واحدة
             let reportHTML = `
-<div style="border: 3px double #1a4d2e; padding: 25px; background: white; font-family: 'Cairo', sans-serif;">
-    <div class="report-header" style="text-align: center; border-bottom: 3px solid #1a4d2e; padding-bottom: 15px; margin-bottom: 20px;">
-        <div style="margin-bottom: 10px;">
-            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%231a4d2e'/%3E%3Ctext x='50' y='65' font-size='50' text-anchor='middle' fill='white' font-family='Arial'%3E🎓%3C/text%3E%3C/svg%3E" alt="شعار" style="width: 60px; height: 60px;">
-        </div>
-        <h1 style="font-family: 'Amiri', serif; color: #1a4d2e; font-size: 24pt; margin: 10px 0; font-weight: bold;">
-            تقرير السلوك الطلابي
-        </h1>
-        <p style="color: #666; font-size: 11pt; margin: 5px 0;">
-            وفقًا للائحة شؤون الطلبة بالمدارس الحكومية - القرار الوزاري رقم 2017/234
-        </p>
+<div style="font-family: 'Cairo', sans-serif; padding: 15px; max-width: 100%; font-size: 10pt; line-height: 1.4;">
+    
+    <!-- الترويسة -->
+    <div style="text-align: center; border: 2px solid #1a4d2e; padding: 8px; margin-bottom: 12px;">
+        <h2 style="margin: 0; font-size: 16pt; color: #1a4d2e; font-family: 'Amiri', serif;">تقرير السلوك الطلابي</h2>
+        <p style="margin: 3px 0 0 0; font-size: 8pt; color: #666;">القرار الوزاري 2017/234 - المادة (39)</p>
     </div>
 
-    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11pt;">
+    <!-- بيانات الطالب -->
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 9pt;">
         <tr>
-            <td style="padding: 8px; border: 1px solid #ddd; background: #f8f9fa; font-weight: 600; width: 25%;">📅 التاريخ:</td>
-            <td style="padding: 8px; border: 1px solid #ddd;">${formattedDate}</td>
-            <td style="padding: 8px; border: 1px solid #ddd; background: #f8f9fa; font-weight: 600; width: 25%;">🏫 الشعبة:</td>
-            <td style="padding: 8px; border: 1px solid #ddd;">${className || 'غير محدد'}</td>
+            <td style="border: 1px solid #ddd; padding: 4px; background: #f5f5f5; width: 20%; font-weight: 600;">التاريخ:</td>
+            <td style="border: 1px solid #ddd; padding: 4px; width: 30%;">${formattedDate}</td>
+            <td style="border: 1px solid #ddd; padding: 4px; background: #f5f5f5; width: 20%; font-weight: 600;">الشعبة:</td>
+            <td style="border: 1px solid #ddd; padding: 4px; width: 30%;">${className || 'غير محدد'}</td>
         </tr>
         <tr>
-            <td style="padding: 8px; border: 1px solid #ddd; background: #f8f9fa; font-weight: 600;">👤 اسم الطالب:</td>
-            <td colspan="3" style="padding: 8px; border: 1px solid #ddd; font-weight: 700; color: #1a4d2e;">${studentName}</td>
+            <td style="border: 1px solid #ddd; padding: 4px; background: #f5f5f5; font-weight: 600;">الطالب:</td>
+            <td colspan="3" style="border: 1px solid #ddd; padding: 4px; font-weight: 700;">${studentName}</td>
         </tr>
     </table>
 
-    <div style="margin-bottom: 20px;">
-        <h3 style="background: #1a4d2e; color: white; padding: 10px 15px; margin: 0 0 10px 0; border-radius: 5px; font-size: 13pt;">
-            📋 السلوكيات المخالفة المرصودة:
-        </h3>
-        <ul style="margin: 0; padding-right: 25px; line-height: 2;">`;
+    <!-- السلوكيات -->
+    <div style="margin-bottom: 10px;">
+        <div style="background: #1a4d2e; color: white; padding: 4px 8px; font-size: 10pt; font-weight: 600; margin-bottom: 5px;">
+            السلوكيات المخالفة:
+        </div>
+        <ul style="margin: 0; padding-right: 20px; font-size: 9pt; line-height: 1.5;">`;
 
-            behaviors.forEach((behavior, index) => {
+            behaviors.forEach((behavior) => {
                 const level = getBehaviorLevel(behavior);
                 let badge = '';
-                let badgeColor = '';
+                let color = '';
                 
-                if (level === 1) {
-                    badge = 'نصح';
-                    badgeColor = '#0277bd';
-                } else if (level === 2) {
-                    badge = 'تنبيه';
-                    badgeColor = '#f57c00';
-                } else {
-                    badge = 'إنذار';
-                    badgeColor = '#c1292e';
-                }
+                if (level === 1) { badge = 'نصح'; color = '#0277bd'; }
+                else if (level === 2) { badge = 'تنبيه'; color = '#f57c00'; }
+                else { badge = 'إنذار'; color = '#c1292e'; }
                 
-                reportHTML += `
-            <li style="margin-bottom: 8px;">
-                <span style="background: ${badgeColor}; color: white; padding: 3px 10px; border-radius: 4px; font-size: 9pt; font-weight: 600; margin-left: 8px;">${badge}</span>
-                <span style="font-weight: 500;">${behavior}</span>
-            </li>`;
+                reportHTML += `<li style="margin-bottom: 3px;"><span style="background: ${color}; color: white; padding: 1px 6px; border-radius: 3px; font-size: 7pt; font-weight: 600; margin-left: 5px;">${badge}</span>${behavior}</li>`;
             });
 
-            reportHTML += `
-        </ul>
-    </div>`;
+            reportHTML += `</ul></div>`;
 
+            // الملاحظات (إذا وجدت)
             if (notes) {
                 reportHTML += `
-    <div style="margin-bottom: 20px;">
-        <h3 style="background: #4f9d69; color: white; padding: 10px 15px; margin: 0 0 10px 0; border-radius: 5px; font-size: 13pt;">
-            📝 الملاحظات والتفاصيل:
-        </h3>
-        <div style="padding: 12px; background: #f8f9fa; border-right: 4px solid #4f9d69; border-radius: 5px; line-height: 1.8;">
+    <div style="margin-bottom: 10px;">
+        <div style="background: #4f9d69; color: white; padding: 4px 8px; font-size: 10pt; font-weight: 600; margin-bottom: 5px;">
+            الملاحظات:
+        </div>
+        <div style="padding: 5px 8px; background: #f8f9fa; border-right: 3px solid #4f9d69; font-size: 9pt; line-height: 1.4;">
             ${notes.replace(/\n/g, '<br>')}
         </div>
     </div>`;
             }
 
+            // الإجراء المتخذ
             if (action) {
                 reportHTML += `
-    <div style="margin-bottom: 20px;">
-        <h3 style="background: #d4af37; color: white; padding: 10px 15px; margin: 0 0 10px 0; border-radius: 5px; font-size: 13pt;">
-            ⚖️ الإجراء المتخذ:
-        </h3>
-        <div style="padding: 12px; background: #fffbf0; border: 2px solid #d4af37; border-radius: 5px; font-weight: 600;">
+    <div style="margin-bottom: 10px;">
+        <div style="background: #d4af37; color: white; padding: 4px 8px; font-size: 10pt; font-weight: 600; margin-bottom: 5px;">
+            الإجراء المتخذ:
+        </div>
+        <div style="padding: 5px 8px; background: #fffbf0; border: 1px solid #d4af37; font-size: 9pt; font-weight: 600;">
             ${action}
         </div>
     </div>`;
             }
 
+            // التوقيعات
             reportHTML += `
-    <div style="border-top: 2px solid #ddd; padding-top: 15px; margin-top: 20px;">
-        <p style="font-size: 9pt; color: #666; margin: 5px 0; line-height: 1.6;">
-            <strong>المرجع القانوني:</strong> لائحة شؤون الطلبة بالمدارس الحكومية - القرار الوزاري رقم 2017/234 - المادة (39)
-        </p>
+    <div style="display: flex; justify-content: space-between; margin-top: 15px; gap: 10px;">
+        <div style="width: 48%; text-align: center;">
+            <div style="border-bottom: 1px solid #000; height: 35px; margin-bottom: 3px;"></div>
+            <p style="margin: 0; font-size: 8pt; font-weight: 600;">توقيع المعلم</p>
+        </div>
+        <div style="width: 48%; text-align: center;">
+            <div style="border-bottom: 1px solid #000; height: 35px; margin-bottom: 3px;"></div>
+            <p style="margin: 0; font-size: 8pt; font-weight: 600;">توقيع ولي الأمر</p>
+        </div>
     </div>
 
-    <div style="margin-top: 30px; display: flex; justify-content: space-between;">
-        <div style="text-align: center; width: 45%;">
-            <div style="border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 8px; min-height: 50px;"></div>
-            <p style="margin: 0; font-weight: 600; font-size: 10pt;">توقيع المعلم</p>
-        </div>
-        <div style="text-align: center; width: 45%;">
-            <div style="border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 8px; min-height: 50px;"></div>
-            <p style="margin: 0; font-weight: 600; font-size: 10pt;">توقيع ولي الأمر</p>
-        </div>
-    </div>
 </div>`;
 
             const reportDiv = document.getElementById('reportOutput');
@@ -1174,9 +1145,176 @@
                 return;
             }
 
-            const reportText = reportDiv.innerText;
-            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(reportText)}`;
+            const className = document.getElementById('className').value;
+            const studentName = document.getElementById('studentName').value;
+            const date = document.getElementById('date').value;
+            const behaviors = getSelectedBehaviors();
+            const notes = document.getElementById('notes').value;
+            const action = document.getElementById('action').value;
+
+            const formattedDate = new Date(date).toLocaleDateString('ar-EG', {
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric'
+            });
+
+            // إنشاء رسالة نصية منسقة للواتساب
+            let message = `━━━━━━━━━━━━━━━━━━━━━━━
+📋 *تقرير السلوك الطلابي*
+━━━━━━━━━━━━━━━━━━━━━━━
+
+📅 *التاريخ:* ${formattedDate}
+🏫 *الشعبة:* ${className || 'غير محدد'}
+👤 *الطالب:* ${studentName}
+
+━━━━━━━━━━━━━━━━━━━━━━━
+📌 *السلوكيات المخالفة:*
+━━━━━━━━━━━━━━━━━━━━━━━
+
+`;
+
+            behaviors.forEach((behavior, index) => {
+                const level = getBehaviorLevel(behavior);
+                let badge = '';
+                
+                if (level === 1) badge = '🔵 نصح';
+                else if (level === 2) badge = '🟠 تنبيه';
+                else badge = '🔴 إنذار';
+                
+                message += `${index + 1}. ${badge}\n   ${behavior}\n\n`;
+            });
+
+            if (notes) {
+                message += `━━━━━━━━━━━━━━━━━━━━━━━
+📝 *الملاحظات:*
+━━━━━━━━━━━━━━━━━━━━━━━
+
+${notes}
+
+`;
+            }
+
+            if (action) {
+                message += `━━━━━━━━━━━━━━━━━━━━━━━
+⚖️ *الإجراء المتخذ:*
+━━━━━━━━━━━━━━━━━━━━━━━
+
+${action}
+
+`;
+            }
+
+            message += `━━━━━━━━━━━━━━━━━━━━━━━
+📌 *المرجع القانوني:*
+لائحة شؤون الطلبة - القرار 2017/234
+المادة (39)
+━━━━━━━━━━━━━━━━━━━━━━━`;
+
+            // إنشاء رابط واتساب
+            const encodedMessage = encodeURIComponent(message);
+            const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+            
+            // فتح واتساب في نافذة جديدة
             window.open(whatsappUrl, '_blank');
+            
+            showToast('✅ جاري فتح واتساب...');
+        }
+
+        function shareWhatsAppToNumber() {
+            const reportDiv = document.getElementById('reportOutput');
+            if (!reportDiv.classList.contains('show')) {
+                showToast('⚠️ يرجى إنشاء التقرير أولاً');
+                return;
+            }
+
+            // طلب رقم الهاتف
+            const phoneNumber = prompt('أدخل رقم واتساب ولي الأمر (مع رمز الدولة):\nمثال: 96899123456');
+            
+            if (!phoneNumber) {
+                return;
+            }
+
+            // إزالة المسافات والرموز
+            const cleanNumber = phoneNumber.replace(/[\s\-\+\(\)]/g, '');
+
+            const className = document.getElementById('className').value;
+            const studentName = document.getElementById('studentName').value;
+            const date = document.getElementById('date').value;
+            const behaviors = getSelectedBehaviors();
+            const notes = document.getElementById('notes').value;
+            const action = document.getElementById('action').value;
+
+            const formattedDate = new Date(date).toLocaleDateString('ar-EG', {
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric'
+            });
+
+            // إنشاء رسالة نصية منسقة للواتساب
+            let message = `السلام عليكم ورحمة الله وبركاته
+ولي أمر الطالب: *${studentName}*
+
+━━━━━━━━━━━━━━━━━━━━━━━
+📋 *تقرير السلوك الطلابي*
+━━━━━━━━━━━━━━━━━━━━━━━
+
+📅 *التاريخ:* ${formattedDate}
+🏫 *الشعبة:* ${className || 'غير محدد'}
+
+━━━━━━━━━━━━━━━━━━━━━━━
+📌 *السلوكيات المخالفة:*
+━━━━━━━━━━━━━━━━━━━━━━━
+
+`;
+
+            behaviors.forEach((behavior, index) => {
+                const level = getBehaviorLevel(behavior);
+                let badge = '';
+                
+                if (level === 1) badge = '🔵 نصح';
+                else if (level === 2) badge = '🟠 تنبيه';
+                else badge = '🔴 إنذار';
+                
+                message += `${index + 1}. ${badge}\n   ${behavior}\n\n`;
+            });
+
+            if (notes) {
+                message += `━━━━━━━━━━━━━━━━━━━━━━━
+📝 *الملاحظات:*
+━━━━━━━━━━━━━━━━━━━━━━━
+
+${notes}
+
+`;
+            }
+
+            if (action) {
+                message += `━━━━━━━━━━━━━━━━━━━━━━━
+⚖️ *الإجراء المتخذ:*
+━━━━━━━━━━━━━━━━━━━━━━━
+
+${action}
+
+`;
+            }
+
+            message += `━━━━━━━━━━━━━━━━━━━━━━━
+📌 *المرجع القانوني:*
+لائحة شؤون الطلبة - القرار 2017/234
+المادة (39)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+نرجو منكم التعاون معنا لتحسين سلوك الطالب.
+شكراً لكم.`;
+
+            // إنشاء رابط واتساب مع الرقم
+            const encodedMessage = encodeURIComponent(message);
+            const whatsappUrl = `https://wa.me/${cleanNumber}?text=${encodedMessage}`;
+            
+            // فتح واتساب في نافذة جديدة
+            window.open(whatsappUrl, '_blank');
+            
+            showToast('✅ جاري فتح واتساب...');
         }
 
         function showToast(message) {
