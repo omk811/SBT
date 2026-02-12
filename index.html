@@ -8,6 +8,14 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     <style>
+        /* إخفاء واجهة التسجيل عند الطباعة */
+        @media print {
+            #loginPage {
+                display: none !important;
+            }
+        }
+    </style>
+    <style>
         :root {
             --primary: #1a4d2e;
             --secondary: #4f9d69;
@@ -398,17 +406,72 @@
         @media print {
             body {
                 background: white;
-                padding: 0;
+                padding: 20px;
+                margin: 0;
             }
             
-            header, .section-card, .buttons-row {
+            #loginPage {
+                display: none !important;
+            }
+            
+            header {
+                background: white !important;
+                color: black !important;
+                border: 2px solid var(--primary);
+                page-break-after: avoid;
+                margin-bottom: 15px;
+                padding: 20px;
+            }
+            
+            header h1, header p {
+                color: var(--primary) !important;
+                text-shadow: none !important;
+            }
+            
+            header::before {
                 display: none;
+            }
+            
+            .section-card {
+                border: 1px solid #ddd;
+                box-shadow: none;
+                page-break-inside: avoid;
+                margin-bottom: 15px;
+                padding: 15px;
+            }
+            
+            .buttons-row, #studentsSection {
+                display: none !important;
             }
             
             #reportOutput {
                 display: block !important;
-                border: none;
+                border: 2px solid var(--primary);
                 box-shadow: none;
+                page-break-inside: avoid;
+                padding: 20px;
+                margin-top: 15px;
+            }
+            
+            .behavior-category {
+                page-break-inside: avoid;
+                margin-bottom: 10px;
+                padding: 10px;
+            }
+            
+            .section-title {
+                font-size: 1.3rem;
+                page-break-after: avoid;
+            }
+            
+            /* ضمان طباعة كل شيء في صفحة واحدة */
+            * {
+                page-break-inside: avoid;
+            }
+            
+            @page {
+                size: A4;
+                margin: 15mm;
             }
         }
 
@@ -434,9 +497,153 @@
                 justify-content: center;
             }
         }
+
+        /* صفحة تسجيل الدخول */
+        #loginPage {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        #loginPage.hidden {
+            display: none;
+        }
+
+        .login-card {
+            background: white;
+            padding: 50px;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .login-card h1 {
+            font-family: 'Amiri', serif;
+            color: var(--primary);
+            font-size: 2.2rem;
+            margin-bottom: 15px;
+        }
+
+        .login-card p {
+            color: var(--text-secondary);
+            margin-bottom: 35px;
+            font-size: 1.1rem;
+        }
+
+        .login-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        #employeeId {
+            width: 100%;
+            padding: 18px 24px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-family: 'Cairo', sans-serif;
+            font-size: 1.3rem;
+            text-align: center;
+            letter-spacing: 2px;
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+        }
+
+        #employeeId:focus {
+            outline: none;
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 4px rgba(79, 157, 105, 0.1);
+        }
+
+        #loginBtn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Cairo', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #loginBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+
+        .error-message {
+            color: var(--danger);
+            background: #ffebee;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+            font-weight: 600;
+        }
+
+        .error-message.show {
+            display: block;
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        #mainApp {
+            display: none;
+        }
+
+        #mainApp.show {
+            display: block;
+        }
     </style>
 </head>
 <body>
+    <!-- صفحة تسجيل الدخول -->
+    <div id="loginPage">
+        <div class="login-card">
+            <div class="login-icon">🔐</div>
+            <h1>تسجيل الدخول</h1>
+            <p>نظام رصد السلوكيات الطلابية</p>
+            
+            <input type="text" id="employeeId" placeholder="أدخل الرقم الوظيفي" maxlength="8" autocomplete="off">
+            
+            <button id="loginBtn" onclick="login()">دخول النظام</button>
+            
+            <div id="errorMessage" class="error-message">
+                ❌ الرقم الوظيفي غير صحيح!
+            </div>
+        </div>
+    </div>
+
+    <!-- التطبيق الرئيسي -->
+    <div id="mainApp">
     <div id="toast" class="toast"></div>
     
     <div class="container">
@@ -584,8 +791,54 @@
 
         <div id="reportOutput"></div>
     </div>
+    </div>
+    <!-- نهاية التطبيق الرئيسي -->
 
     <script>
+        const CORRECT_EMPLOYEE_ID = "16117946";
+
+        // وظيفة تسجيل الدخول
+        function login() {
+            const employeeId = document.getElementById('employeeId').value.trim();
+            const errorMessage = document.getElementById('errorMessage');
+            
+            if (employeeId === CORRECT_EMPLOYEE_ID) {
+                // تسجيل دخول ناجح
+                document.getElementById('loginPage').classList.add('hidden');
+                document.getElementById('mainApp').classList.add('show');
+                
+                // حفظ حالة تسجيل الدخول
+                sessionStorage.setItem('isLoggedIn', 'true');
+                
+                showToast('✅ مرحباً بك في النظام');
+            } else {
+                // خطأ في الرقم الوظيفي
+                errorMessage.classList.add('show');
+                document.getElementById('employeeId').value = '';
+                document.getElementById('employeeId').focus();
+                
+                setTimeout(() => {
+                    errorMessage.classList.remove('show');
+                }, 3000);
+            }
+        }
+
+        // التحقق من حالة تسجيل الدخول عند تحميل الصفحة
+        window.addEventListener('load', function() {
+            if (sessionStorage.getItem('isLoggedIn') === 'true') {
+                document.getElementById('loginPage').classList.add('hidden');
+                document.getElementById('mainApp').classList.add('show');
+            }
+        });
+
+        // السماح بالدخول بزر Enter
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('employeeId').addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    login();
+                }
+            });
+        });
         // بيانات الطلاب
         const studentsData = {
             "5-1": [
