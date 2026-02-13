@@ -1682,9 +1682,20 @@ ${action}
 شكراً لكم.`;
             }
 
+           // كشف نوع الجهاز
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
             // إنشاء رابط واتساب مع الرقم
             const encodedMessage = encodeURIComponent(message);
-            const whatsappUrl = `https://wa.me/${cleanNumber}?text=${encodedMessage}`;
+            let whatsappUrl;
+            
+            if (isMobile) {
+                // للجوال: استخدام wa.me مباشرة
+                whatsappUrl = `https://wa.me/${cleanNumber}?text=${encodedMessage}`;
+            } else {
+                // للكمبيوتر: استخدام واتساب ويب
+                whatsappUrl = `https://web.whatsapp.com/send?phone=${cleanNumber}&text=${encodedMessage}`;
+            }
             
             // فتح واتساب في نافذة جديدة
             window.open(whatsappUrl, '_blank');
