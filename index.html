@@ -1544,15 +1544,28 @@ ${action}
 ━━━━━━━━━`;
             }
 
-            // إنشاء رابط واتساب
-            const encodedMessage = encodeURIComponent(message);
-            const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
-            
-            // فتح واتساب في نافذة جديدة
-            window.open(whatsappUrl, '_blank');
-            
-            showToast('✅ جاري فتح واتساب...');
-        }
+// كشف نوع الجهاز
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                
+                const encodedMessage = encodeURIComponent(message);
+                let whatsappUrl;
+                
+                if (isMobile) {
+                    // للجوال: استخدام wa.me
+                    whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+                } else {
+                    // للكمبيوتر: استخدام واتساب ويب
+                    whatsappUrl = `https://web.whatsapp.com/send?text=${encodedMessage}`;
+                }
+                
+                window.open(whatsappUrl, '_blank');
+                showToast('✅ جاري فتح واتساب...');
+                
+            } catch (error) {
+                console.error('خطأ:', error);
+                showToast('❌ فشل إرسال الرسالة');
+            }
+         }
 
         function shareWhatsAppToNumber() {
             const reportDiv = document.getElementById('reportOutput');
