@@ -1201,55 +1201,58 @@
 
         // حفظ البيانات محليًا
         const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbwlxuPtdqhfi2mTGT816eHjY_YVlHEF_GsN2OorXrKeXw9nKovQY9tHJX_xC_9c-js/exec';
+async function saveData() {
+    const studentName = document.getElementById('studentName').value;
+    const className = document.getElementById('className').value; // هذه هي الشعبة
+    const behaviors = getSelectedBehaviors();
+    
+    if (!studentName || behaviors.length === 0) {
+        showToast('⚠️ لا توجد بيانات للحفظ');
+        return;
+    }
 
-        async function saveData() {
-            const studentName = document.getElementById('studentName').value;
-            const className = document.getElementById('className').value;
-            const behaviors = getSelectedBehaviors();
-            
-            if (!studentName || behaviors.length === 0) {
-                showToast('⚠️ لا توجد بيانات للحفظ');
-                return;
-            }
+    if (!GOOGLE_SHEET_URL || GOOGLE_SHEET_URL === 'ضع_رابط_Web_App_هنا') {
+        showToast('⚠️ يرجى إعداد Google Sheets أولاً');
+        return;
+    }
 
-            if (!GOOGLE_SHEET_URL || GOOGLE_SHEET_URL === 'ضع_رابط_Web_App_هنا') {
-                showToast('⚠️ يرجى إعداد Google Sheets أولاً');
-                return;
-            }
+    // تأكد من أن className موجود
+    if (!className) {
+        showToast('⚠️ يرجى اختيار الشعبة');
+        return;
+    }
 
-            const data = {
-                id: Date.now(),
-                date: document.getElementById('date').value,
-                studentName: studentName,
-                className: className,
-                behaviors: behaviors,
-                notes: document.getElementById('notes').value,
-                action: document.getElementById('action').value,
-                isPositive: isPositiveReport(),
-                timestamp: new Date().toISOString()
-            };
+    const data = {
+        id: Date.now(),
+        class_name: className,  // غيّر الاسم إلى class_name ليكون أوضح
+        student_name: studentName,
+        report_date: document.getElementById('date').value, // غيّر الاسم
+        behaviors: behaviors,
+        notes: document.getElementById('notes').value,
+        action: document.getElementById('action').value,
+        is_positive: isPositiveReport(), // غيّر الاسم
+        timestamp: new Date().toISOString()
+    };
 
-            // عرض رسالة تحميل
-            showToast('⏳ جاري الحفظ...');
+    showToast('⏳ جاري الحفظ...');
 
-            try {
-                const response = await fetch(GOOGLE_SHEET_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(data)
-                });
-                
-                // mode: no-cors يعني لن نحصل على response، لكن البيانات ستصل
-                showToast('✅ تم حفظ التقرير في السحابة');
-                
-            } catch (error) {
-                console.error('خطأ في الحفظ:', error);
-                showToast('❌ فشل الحفظ - تحقق من الاتصال');
-            }
-        }
+    try {
+        const response = await fetch(GOOGLE_SHEET_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        
+        showToast('✅ تم حفظ التقرير في السحابة');
+        
+    } catch (error) {
+        console.error('خطأ في الحفظ:', error);
+        showToast('❌ فشل الحفظ - تحقق من الاتصال');
+    }
+ }
 
         function viewReports() {
             window.location.href = 'reports.html';
