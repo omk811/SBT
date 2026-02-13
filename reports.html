@@ -223,12 +223,42 @@
             margin-bottom: 8px;
         }
 
-        .student-info .meta {
+        .meta-info {
             display: flex;
             gap: 20px;
             flex-wrap: wrap;
+            background: var(--bg);
+            padding: 10px 15px;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .meta-icon {
+            font-size: 1.2rem;
+        }
+
+        .meta-label {
+            font-weight: 600;
             color: var(--text-secondary);
-            font-size: 0.95rem;
+        }
+
+        .meta-value {
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .meta-value.class-name {
+            background: var(--primary);
+            color: white;
+            padding: 3px 12px;
+            border-radius: 50px;
+            font-size: 0.9rem;
         }
 
         .report-type {
@@ -252,7 +282,7 @@
             background: var(--bg);
             padding: 15px;
             border-radius: 12px;
-            margin-bottom: 15px;
+            margin: 15px 0;
         }
 
         .behavior-item {
@@ -273,6 +303,8 @@
             font-size: 0.75rem;
             font-weight: 600;
             color: white;
+            min-width: 50px;
+            text-align: center;
         }
 
         .badge-positive {
@@ -295,6 +327,7 @@
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
+            margin-top: 20px;
         }
 
         .action-btn {
@@ -306,6 +339,8 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
+            flex: 1;
+            min-width: 100px;
         }
 
         .btn-edit {
@@ -369,6 +404,19 @@
             transform: translateX(-50%) translateY(0);
         }
 
+        .info-box {
+            background: #e3f2fd;
+            border-right: 4px solid var(--info);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .info-box p {
+            margin: 5px 0;
+            color: var(--info);
+        }
+
         @media (max-width: 768px) {
             .stats-row {
                 grid-template-columns: 1fr;
@@ -386,6 +434,14 @@
             .report-header {
                 flex-direction: column;
             }
+            
+            .report-actions {
+                flex-direction: column;
+            }
+            
+            .action-btn {
+                width: 100%;
+            }
         }
     </style>
 </head>
@@ -396,6 +452,12 @@
         <header>
             <h1>📊 إدارة التقارير المحفوظة</h1>
         </header>
+
+        <!-- رسالة توضيحية -->
+        <div class="info-box">
+            <p>🔍 <strong>ملاحظة:</strong> يتم عرض الشعبة الدراسية بجانب اسم الطالب.</p>
+            <p>✅ إذا كانت الشعبة لا تظهر، تأكد من أن البيانات محفوظة بشكل صحيح في Google Sheets.</p>
+        </div>
 
         <div class="stats-row">
             <div class="stat-card">
@@ -422,9 +484,9 @@
             </div>
 
             <div class="filter-buttons">
-                <button class="filter-btn active" onclick="setFilter('all')">الكل</button>
-                <button class="filter-btn" onclick="setFilter('positive')">إيجابية</button>
-                <button class="filter-btn" onclick="setFilter('negative')">سلبية</button>
+                <button class="filter-btn active" onclick="setFilter('all', this)">الكل</button>
+                <button class="filter-btn" onclick="setFilter('positive', this)">إيجابية</button>
+                <button class="filter-btn" onclick="setFilter('negative', this)">سلبية</button>
             </div>
         </div>
 
@@ -438,6 +500,7 @@
         const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbwlxuPtdqhfi2mTGT816eHjY_YVlHEF_GsN2OorXrKeXw9nKovQY9tHJX_xC_9c-js/exec';
         
         let currentFilter = 'all';
+        let allReports = []; // تخزين جميع التقارير
 
         async function loadReports() {
             if (!GOOGLE_SHEET_URL || GOOGLE_SHEET_URL === 'ضع_رابط_Web_App_هنا') {
@@ -450,18 +513,19 @@
                 showToast('⏳ جاري تحميل التقارير...');
                 
                 const response = await fetch(GOOGLE_SHEET_URL);
-                const reports = await response.json();
+                allReports = await response.json();
                 
-                if (reports.error) {
-                    throw new Error(reports.error);
+                if (allReports.error) {
+                    throw new Error(allReports.error);
                 }
                 
                 // تحديث الإحصائيات
-                document.getElementById('totalReports').textContent = reports.length;
-                document.getElementById('positiveReports').textContent = reports.filter(r => r.isPositive).length;
-                document.getElementById('negativeReports').textContent = reports.filter(r => !r.isPositive).length;
+                updateStats(allReports);
                 
+                // عرض التقارير
                 filterReports();
+                
+                showToast(`✅ تم تحميل ${allReports.length} تقرير`);
                 
             } catch (error) {
                 console.error('خطأ في التحميل:', error);
@@ -470,34 +534,26 @@
             }
         }
 
-        async function filterReports() {
-            if (!GOOGLE_SHEET_URL || GOOGLE_SHEET_URL === 'ضع_رابط_Web_App_هنا') {
-                displayReports([]);
-                return;
-            }
+        function updateStats(reports) {
+            document.getElementById('totalReports').textContent = reports.length;
+            document.getElementById('positiveReports').textContent = reports.filter(r => r.isPositive).length;
+            document.getElementById('negativeReports').textContent = reports.filter(r => !r.isPositive).length;
+        }
 
-            try {
-                const response = await fetch(GOOGLE_SHEET_URL);
-                const reports = await response.json();
+        function filterReports() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            let filtered = allReports.filter(report => {
+                const matchesSearch = report.studentName.toLowerCase().includes(searchTerm);
+                const matchesFilter = 
+                    currentFilter === 'all' ? true :
+                    currentFilter === 'positive' ? report.isPositive :
+                    !report.isPositive;
                 
-                const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-                
-                let filtered = reports.filter(report => {
-                    const matchesSearch = report.studentName.toLowerCase().includes(searchTerm);
-                    const matchesFilter = 
-                        currentFilter === 'all' ? true :
-                        currentFilter === 'positive' ? report.isPositive :
-                        !report.isPositive;
-                    
-                    return matchesSearch && matchesFilter;
-                });
-                
-                displayReports(filtered.reverse()); // عرض الأحدث أولاً
-                
-            } catch (error) {
-                console.error('خطأ في الفلترة:', error);
-                displayReports([]);
-            }
+                return matchesSearch && matchesFilter;
+            });
+            
+            displayReports(filtered.reverse()); // عرض الأحدث أولاً
         }
 
         function displayReports(reports) {
@@ -516,24 +572,46 @@
                 return;
             }
             
-            container.innerHTML = reports.map(report => `
+            container.innerHTML = reports.map(report => {
+                // التأكد من وجود قيمة للشعبة
+                const className = report.className || 'غير محدد';
+                const classNameDisplay = className !== 'غير محدد' ? `الشعبة ${className}` : 'غير محدد';
+                
+                return `
                 <div class="report-card ${report.isPositive ? 'positive' : ''}">
                     <div class="report-header">
                         <div class="student-info">
                             <h3>👤 ${report.studentName}</h3>
-                            <div class="meta">
-                                <span>🏫 الشعبة: ${report.className || 'غير محدد'}</span>
-                                <span>📅 ${new Date(report.date).toLocaleDateString('ar-EG')}</span>
+                            
+                            <!-- معلومات إضافية منفصلة -->
+                            <div class="meta-info">
+                                <div class="meta-item">
+                                    <span class="meta-icon">🏫</span>
+                                    <span class="meta-label">الشعبة:</span>
+                                    <span class="meta-value class-name">${classNameDisplay}</span>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-icon">📅</span>
+                                    <span class="meta-label">التاريخ:</span>
+                                    <span class="meta-value">${new Date(report.date).toLocaleDateString('ar-EG')}</span>
+                                </div>
+                                ${report.timestamp ? `
+                                <div class="meta-item">
+                                    <span class="meta-icon">⏰</span>
+                                    <span class="meta-label">وقت التسجيل:</span>
+                                    <span class="meta-value">${new Date(report.timestamp).toLocaleString('ar-EG')}</span>
+                                </div>
+                                ` : ''}
                             </div>
                         </div>
                         <div class="report-type ${report.isPositive ? 'positive' : 'negative'}">
-                            ${report.isPositive ? '⭐ إيجابي' : '⚠️ سلبي'}
+                            ${report.isPositive ? '⭐ تقرير إيجابي' : '⚠️ تقرير سلبي'}
                         </div>
                     </div>
                     
                     <div class="behaviors-list">
                         <strong style="color: var(--primary); margin-bottom: 10px; display: block;">
-                            ${report.isPositive ? '✨ نقاط التميز:' : '📋 السلوكيات:'}
+                            ${report.isPositive ? '✨ نقاط التميز:' : '📋 السلوكيات المسجلة:'}
                         </strong>
                         ${report.behaviors.map(behavior => `
                             <div class="behavior-item">
@@ -546,16 +624,22 @@
                     </div>
                     
                     ${report.notes ? `
-                        <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 15px; border-right: 3px solid var(--info);">
-                            <strong>📝 ملاحظات:</strong><br>
-                            <span style="color: var(--text-secondary);">${report.notes}</span>
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0; border-right: 4px solid var(--info);">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                                <span style="font-size: 1.2rem;">📝</span>
+                                <strong>ملاحظات إضافية:</strong>
+                            </div>
+                            <p style="color: var(--text-secondary); margin-right: 30px;">${report.notes}</p>
                         </div>
                     ` : ''}
                     
                     ${report.action ? `
-                        <div style="background: #fffbf0; padding: 12px; border-radius: 8px; margin-bottom: 15px; border-right: 3px solid var(--warning);">
-                            <strong>⚖️ الإجراء:</strong><br>
-                            <span style="color: var(--text-secondary);">${report.action}</span>
+                        <div style="background: #fffbf0; padding: 15px; border-radius: 8px; margin: 15px 0; border-right: 4px solid var(--warning);">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                                <span style="font-size: 1.2rem;">⚖️</span>
+                                <strong>الإجراء المتخذ:</strong>
+                            </div>
+                            <p style="color: var(--text-secondary); margin-right: 30px;">${report.action}</p>
                         </div>
                     ` : ''}
                     
@@ -571,14 +655,14 @@
                         </button>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         function getBadgeClass(behavior, isPositive) {
             if (isPositive) return 'badge-positive';
             
-            const level1 = ['الحديث', 'الضحك', 'التحرك', 'اللعب', 'التشويش', 'عدم الإنصات', 'المقاطعة'];
-            const level3 = ['الشجار', 'النميمة', 'المشاكل', 'التنمر', 'الاستيلاء'];
+            const level1 = ['الحديث', 'الضحك', 'التحرك', 'اللعب', 'التشويش', 'عدم الإنصات', 'المقاطعة', 'الخروج', 'شرب الماء', 'تناول المأكولات'];
+            const level3 = ['الشجار', 'النميمة', 'المشاكل', 'التنمر', 'الاستيلاء', 'السخرية', 'التكبر', 'عدم احترام'];
             
             for (let keyword of level3) {
                 if (behavior.includes(keyword)) return 'badge-alert';
@@ -590,33 +674,33 @@
         }
 
         function getBadgeText(behavior, isPositive) {
-            if (isPositive) return '⭐';
+            if (isPositive) return '⭐ إيجابي';
             
-            const level1 = ['الحديث', 'الضحك', 'التحرك', 'اللعب', 'التشويش', 'عدم الإنصات', 'المقاطعة'];
-            const level3 = ['الشجار', 'النميمة', 'المشاكل', 'التنمر', 'الاستيلاء'];
+            const level1 = ['الحديث', 'الضحك', 'التحرك', 'اللعب', 'التشويش', 'عدم الإنصات', 'المقاطعة', 'الخروج', 'شرب الماء', 'تناول المأكولات'];
+            const level3 = ['الشجار', 'النميمة', 'المشاكل', 'التنمر', 'الاستيلاء', 'السخرية', 'التكبر', 'عدم احترام'];
             
             for (let keyword of level3) {
-                if (behavior.includes(keyword)) return 'إنذار';
+                if (behavior.includes(keyword)) return '🔴 إنذار';
             }
             for (let keyword of level1) {
-                if (behavior.includes(keyword)) return 'نصح';
+                if (behavior.includes(keyword)) return '🔵 نصح';
             }
-            return 'تنبيه';
+            return '🟠 تنبيه';
         }
 
-        function setFilter(filter) {
+        function setFilter(filter, element) {
             currentFilter = filter;
             
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
-            event.target.classList.add('active');
+            element.classList.add('active');
             
             filterReports();
         }
 
         async function deleteReport(timestamp) {
-            if (!confirm('هل أنت متأكد من حذف هذا التقرير؟\n(سيتم الحذف من السحابة)')) return;
+            if (!confirm('⚠️ تنبيه: الحذف يتم يدوياً من Google Sheets\n\nهل تريد فتح الجدول للحذف؟')) return;
             
             if (!GOOGLE_SHEET_URL || GOOGLE_SHEET_URL === 'ضع_رابط_Web_App_هنا') {
                 showToast('⚠️ يرجى إعداد Google Sheets أولاً');
@@ -624,26 +708,34 @@
             }
 
             try {
-                showToast('⏳ جاري الحذف...');
-                
-                // للأسف mode: no-cors لا يسمح بإرسال معاملات GET
-                // سنحتاج لحل بديل - سأضع ملاحظة في الدليل
-                
-                showToast('⚠️ الحذف من الجدول يتم يدوياً حالياً');
-                
-                // يمكنك فتح Google Sheets مباشرة
-                const sheetId = GOOGLE_SHEET_URL.split('/')[5];
-                window.open(`https://docs.google.com/spreadsheets/d/${sheetId}`, '_blank');
-                
+                // استخراج معرف الجدول من الرابط
+                const match = GOOGLE_SHEET_URL.match(/\/s\/([^\/]+)/);
+                if (match && match[1]) {
+                    const spreadsheetId = match[1];
+                    window.open(`https://docs.google.com/spreadsheets/d/${spreadsheetId}`, '_blank');
+                    showToast('📊 تم فتح الجدول - احذف الصف يدوياً');
+                } else {
+                    window.open('https://docs.google.com/spreadsheets', '_blank');
+                    showToast('📊 تم فتح Google Sheets');
+                }
             } catch (error) {
-                console.error('خطأ في الحذف:', error);
-                showToast('❌ فشل الحذف');
+                console.error('خطأ:', error);
+                showToast('❌ فشل فتح الجدول');
             }
         }
 
         function editReport(id) {
-            showToast('⚠️ ميزة التعديل قيد التطوير');
-            // يمكن تطويرها لاحقاً
+            showToast('✏️ ميزة التعديل قيد التطوير - يمكنك التعديل يدوياً في Google Sheets');
+            
+            if (!GOOGLE_SHEET_URL || GOOGLE_SHEET_URL === 'ضع_رابط_Web_App_هنا') {
+                return;
+            }
+
+            const match = GOOGLE_SHEET_URL.match(/\/s\/([^\/]+)/);
+            if (match && match[1]) {
+                const spreadsheetId = match[1];
+                window.open(`https://docs.google.com/spreadsheets/d/${spreadsheetId}`, '_blank');
+            }
         }
 
         async function shareToWhatsApp(timestamp) {
@@ -657,28 +749,31 @@
                     return;
                 }
                 
-                let message = `السلام عليكم ورحمة الله وبركاته\nولي أمر الطالب/ة: *${report.studentName}*\n\n`;
+                const className = report.className || 'غير محدد';
+                
+                let message = `السلام عليكم ورحمة الله وبركاته\n\n`;
+                message += `📋 *نظام رصد السلوكيات الطلابية*\n\n`;
+                message += `👤 *الطالب:* ${report.studentName}\n`;
+                message += `🏫 *الشعبة:* ${className}\n`;
+                message += `📅 *التاريخ:* ${new Date(report.date).toLocaleDateString('ar-EG')}\n\n`;
                 
                 if (report.isPositive) {
-                    message += `⭐ *تقرير تقدير وتميز طلابي* ⭐\n\n`;
+                    message += `✨ *تقرير إيجابي - نقاط التميز:*\n`;
                 } else {
-                    message += `📋 *تقرير السلوك الطلابي* 📋\n\n`;
-                }
-                
-                message += `📅 التاريخ: ${new Date(report.date).toLocaleDateString('ar-EG')}\n🏫 الشعبة: ${report.className || 'غير محدد'}\n\n`;
-                
-                if (report.isPositive) {
-                    message += `✨ *نقاط التميز:*\n`;
-                } else {
-                    message += `📌 *السلوكيات المخالفة:*\n`;
+                    message += `⚠️ *تقرير سلوكي - السلوكيات المسجلة:*\n`;
                 }
                 
                 report.behaviors.forEach((behavior, index) => {
                     message += `\n${index + 1}. ${behavior}`;
                 });
                 
-                if (report.notes) message += `\n\n📝 *الملاحظات:*\n${report.notes}`;
-                if (report.action) message += `\n\n⚖️ *الإجراء:*\n${report.action}`;
+                if (report.notes) {
+                    message += `\n\n📝 *ملاحظات:*\n${report.notes}`;
+                }
+                
+                if (report.action) {
+                    message += `\n\n⚖️ *الإجراء:*\n${report.action}`;
+                }
                 
                 const encodedMessage = encodeURIComponent(message);
                 window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
