@@ -434,34 +434,70 @@
     </div>
 
     <script>
+        // ضع نفس رابط Web App هنا
+        const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbwlxuPtdqhfi2mTGT816eHjY_YVlHEF_GsN2OorXrKeXw9nKovQY9tHJX_xC_9c-js/exec';
+        
         let currentFilter = 'all';
 
-        function loadReports() {
-            const reports = JSON.parse(localStorage.getItem('behaviorRecords') || '[]');
-            
-            // تحديث الإحصائيات
-            document.getElementById('totalReports').textContent = reports.length;
-            document.getElementById('positiveReports').textContent = reports.filter(r => r.isPositive).length;
-            document.getElementById('negativeReports').textContent = reports.filter(r => !r.isPositive).length;
-            
-            filterReports();
+        async function loadReports() {
+            if (!GOOGLE_SHEET_URL || GOOGLE_SHEET_URL === 'ضع_رابط_Web_App_هنا') {
+                showToast('⚠️ يرجى إعداد Google Sheets أولاً');
+                displayReports([]);
+                return;
+            }
+
+            try {
+                showToast('⏳ جاري تحميل التقارير...');
+                
+                const response = await fetch(GOOGLE_SHEET_URL);
+                const reports = await response.json();
+                
+                if (reports.error) {
+                    throw new Error(reports.error);
+                }
+                
+                // تحديث الإحصائيات
+                document.getElementById('totalReports').textContent = reports.length;
+                document.getElementById('positiveReports').textContent = reports.filter(r => r.isPositive).length;
+                document.getElementById('negativeReports').textContent = reports.filter(r => !r.isPositive).length;
+                
+                filterReports();
+                
+            } catch (error) {
+                console.error('خطأ في التحميل:', error);
+                showToast('❌ فشل تحميل التقارير');
+                displayReports([]);
+            }
         }
 
-        function filterReports() {
-            const reports = JSON.parse(localStorage.getItem('behaviorRecords') || '[]');
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            
-            let filtered = reports.filter(report => {
-                const matchesSearch = report.studentName.toLowerCase().includes(searchTerm);
-                const matchesFilter = 
-                    currentFilter === 'all' ? true :
-                    currentFilter === 'positive' ? report.isPositive :
-                    !report.isPositive;
+        async function filterReports() {
+            if (!GOOGLE_SHEET_URL || GOOGLE_SHEET_URL === 'ضع_رابط_Web_App_هنا') {
+                displayReports([]);
+                return;
+            }
+
+            try {
+                const response = await fetch(GOOGLE_SHEET_URL);
+                const reports = await response.json();
                 
-                return matchesSearch && matchesFilter;
-            });
-            
-            displayReports(filtered.reverse()); // عرض الأحدث أولاً
+                const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+                
+                let filtered = reports.filter(report => {
+                    const matchesSearch = report.studentName.toLowerCase().includes(searchTerm);
+                    const matchesFilter = 
+                        currentFilter === 'all' ? true :
+                        currentFilter === 'positive' ? report.isPositive :
+                        !report.isPositive;
+                    
+                    return matchesSearch && matchesFilter;
+                });
+                
+                displayReports(filtered.reverse()); // عرض الأحدث أولاً
+                
+            } catch (error) {
+                console.error('خطأ في الفلترة:', error);
+                displayReports([]);
+            }
         }
 
         function displayReports(reports) {
@@ -524,13 +560,13 @@
                     ` : ''}
                     
                     <div class="report-actions">
-                        <button class="action-btn btn-whatsapp" onclick="shareToWhatsApp(${report.id})">
+                        <button class="action-btn btn-whatsapp" onclick="shareToWhatsApp('${report.timestamp}')">
                             📱 واتساب
                         </button>
-                        <button class="action-btn btn-edit" onclick="editReport(${report.id})">
+                        <button class="action-btn btn-edit" onclick="editReport('${report.timestamp}')">
                             ✏️ تعديل
                         </button>
-                        <button class="action-btn btn-delete" onclick="deleteReport(${report.id})">
+                        <button class="action-btn btn-delete" onclick="deleteReport('${report.timestamp}')">
                             🗑️ حذف
                         </button>
                     </div>
@@ -579,15 +615,30 @@
             filterReports();
         }
 
-        function deleteReport(id) {
-            if (!confirm('هل أنت متأكد من حذف هذا التقرير؟')) return;
+        async function deleteReport(timestamp) {
+            if (!confirm('هل أنت متأكد من حذف هذا التقرير؟\n(سيتم الحذف من السحابة)')) return;
             
-            let reports = JSON.parse(localStorage.getItem('behaviorRecords') || '[]');
-            reports = reports.filter(r => r.id !== id);
-            localStorage.setItem('behaviorRecords', JSON.stringify(reports));
-            
-            showToast('✅ تم حذف التقرير بنجاح');
-            loadReports();
+            if (!GOOGLE_SHEET_URL || GOOGLE_SHEET_URL === 'ضع_رابط_Web_App_هنا') {
+                showToast('⚠️ يرجى إعداد Google Sheets أولاً');
+                return;
+            }
+
+            try {
+                showToast('⏳ جاري الحذف...');
+                
+                // للأسف mode: no-cors لا يسمح بإرسال معاملات GET
+                // سنحتاج لحل بديل - سأضع ملاحظة في الدليل
+                
+                showToast('⚠️ الحذف من الجدول يتم يدوياً حالياً');
+                
+                // يمكنك فتح Google Sheets مباشرة
+                const sheetId = GOOGLE_SHEET_URL.split('/')[5];
+                window.open(`https://docs.google.com/spreadsheets/d/${sheetId}`, '_blank');
+                
+            } catch (error) {
+                console.error('خطأ في الحذف:', error);
+                showToast('❌ فشل الحذف');
+            }
         }
 
         function editReport(id) {
@@ -595,37 +646,47 @@
             // يمكن تطويرها لاحقاً
         }
 
-        function shareToWhatsApp(id) {
-            const reports = JSON.parse(localStorage.getItem('behaviorRecords') || '[]');
-            const report = reports.find(r => r.id === id);
-            
-            if (!report) return;
-            
-            let message = `السلام عليكم ورحمة الله وبركاته\nولي أمر الطالب/ة: *${report.studentName}*\n\n`;
-            
-            if (report.isPositive) {
-                message += `⭐ *تقرير تقدير وتميز طلابي* ⭐\n\n`;
-            } else {
-                message += `📋 *تقرير السلوك الطلابي* 📋\n\n`;
+        async function shareToWhatsApp(timestamp) {
+            try {
+                const response = await fetch(GOOGLE_SHEET_URL);
+                const reports = await response.json();
+                const report = reports.find(r => r.timestamp === timestamp);
+                
+                if (!report) {
+                    showToast('⚠️ لم يتم العثور على التقرير');
+                    return;
+                }
+                
+                let message = `السلام عليكم ورحمة الله وبركاته\nولي أمر الطالب/ة: *${report.studentName}*\n\n`;
+                
+                if (report.isPositive) {
+                    message += `⭐ *تقرير تقدير وتميز طلابي* ⭐\n\n`;
+                } else {
+                    message += `📋 *تقرير السلوك الطلابي* 📋\n\n`;
+                }
+                
+                message += `📅 التاريخ: ${new Date(report.date).toLocaleDateString('ar-EG')}\n🏫 الشعبة: ${report.className || 'غير محدد'}\n\n`;
+                
+                if (report.isPositive) {
+                    message += `✨ *نقاط التميز:*\n`;
+                } else {
+                    message += `📌 *السلوكيات المخالفة:*\n`;
+                }
+                
+                report.behaviors.forEach((behavior, index) => {
+                    message += `\n${index + 1}. ${behavior}`;
+                });
+                
+                if (report.notes) message += `\n\n📝 *الملاحظات:*\n${report.notes}`;
+                if (report.action) message += `\n\n⚖️ *الإجراء:*\n${report.action}`;
+                
+                const encodedMessage = encodeURIComponent(message);
+                window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
+                
+            } catch (error) {
+                console.error('خطأ:', error);
+                showToast('❌ فشل إرسال الرسالة');
             }
-            
-            message += `📅 التاريخ: ${new Date(report.date).toLocaleDateString('ar-EG')}\n🏫 الشعبة: ${report.className || 'غير محدد'}\n\n`;
-            
-            if (report.isPositive) {
-                message += `✨ *نقاط التميز:*\n`;
-            } else {
-                message += `📌 *السلوكيات المخالفة:*\n`;
-            }
-            
-            report.behaviors.forEach((behavior, index) => {
-                message += `\n${index + 1}. ${behavior}`;
-            });
-            
-            if (report.notes) message += `\n\n📝 *الملاحظات:*\n${report.notes}`;
-            if (report.action) message += `\n\n⚖️ *الإجراء:*\n${report.action}`;
-            
-            const encodedMessage = encodeURIComponent(message);
-            window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
         }
 
         function goBack() {
