@@ -680,8 +680,22 @@
                 if (report.notes) message += `\n\n📝 *الملاحظات:*\n${report.notes}`;
                 if (report.action) message += `\n\n⚖️ *الإجراء:*\n${report.action}`;
                 
+                // كشف نوع الجهاز
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                
                 const encodedMessage = encodeURIComponent(message);
-                window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
+                let whatsappUrl;
+                
+                if (isMobile) {
+                    // للجوال: استخدام wa.me
+                    whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+                } else {
+                    // للكمبيوتر: استخدام واتساب ويب
+                    whatsappUrl = `https://web.whatsapp.com/send?text=${encodedMessage}`;
+                }
+                
+                window.open(whatsappUrl, '_blank');
+                showToast('✅ جاري فتح واتساب...');
                 
             } catch (error) {
                 console.error('خطأ:', error);
