@@ -1200,7 +1200,6 @@
         }
 
         // حفظ البيانات محليًا
-        // ضع رابط Web App هنا
         const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbwlxuPtdqhfi2mTGT816eHjY_YVlHEF_GsN2OorXrKeXw9nKovQY9tHJX_xC_9c-js/exec';
 
         async function saveData() {
@@ -1292,6 +1291,12 @@
             const action = document.getElementById('action').value;
             const isPositive = isPositiveReport();
 
+            // التحقق من اختيار الشعبة أولاً
+            if (!className) {
+                showToast('⚠️ يرجى اختيار الشعبة أولاً');
+                return;
+            }
+
             if (!studentName || !date || behaviors.length === 0) {
                 showToast('⚠️ يرجى إكمال جميع الحقول المطلوبة');
                 return;
@@ -1308,7 +1313,7 @@
             const reportColor = isPositive ? '#2e7d32' : '#1a4d2e';
             const behaviorTitle = isPositive ? 'نقاط التميز والإيجابيات:' : 'السلوكيات المخالفة:';
 
-            // تقرير مختصر جداً في صفحة واحدة
+            // تقرير مختصر جداً في صفحة واحدة مع عرض واضح للشعبة
             let reportHTML = `
 <div style="font-family: 'Cairo', sans-serif; padding: 15px; max-width: 100%; font-size: 10pt; line-height: 1.4;">
     
@@ -1318,13 +1323,13 @@
         <p style="margin: 3px 0 0 0; font-size: 8pt; color: #666;">مشروع الأستاذ خليل البلوشي</p>
     </div>
 
-    <!-- بيانات الطالب -->
+    <!-- بيانات الطالب - تم تعديل عرض الشعبة ليكون واضحاً -->
     <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 9pt;">
         <tr>
             <td style="border: 1px solid #ddd; padding: 4px; background: #f5f5f5; width: 20%; font-weight: 600;">التاريخ:</td>
             <td style="border: 1px solid #ddd; padding: 4px; width: 30%;">${formattedDate}</td>
             <td style="border: 1px solid #ddd; padding: 4px; background: #f5f5f5; width: 20%; font-weight: 600;">الشعبة:</td>
-            <td style="border: 1px solid #ddd; padding: 4px; width: 30%;">${className || 'غير محدد'}</td>
+            <td style="border: 1px solid #ddd; padding: 4px; width: 30%; font-weight: 700; color: ${reportColor};">${className}</td>
         </tr>
         <tr>
             <td style="border: 1px solid #ddd; padding: 4px; background: #f5f5f5; font-weight: 600;">الطالب:</td>
@@ -1434,7 +1439,7 @@
             const isPositive = isPositiveReport();
 
             // تحقق من البيانات
-            if (!studentName || !date || behaviors.length === 0) {
+            if (!className || !studentName || !date || behaviors.length === 0) {
                 showToast('⚠️ يرجى إكمال البيانات المطلوبة');
                 return;
             }
@@ -1455,7 +1460,7 @@
 ━━━━━━━━━━
 
 📅 *التاريخ:* ${formattedDate}
-🏫 *الشعبة:* ${className || 'غير محدد'}
+🏫 *الشعبة:* ${className}
 👤 *الطالب:* ${studentName}
 
 ━━━━━━━━━━
@@ -1475,7 +1480,7 @@
 ━━━━━━━━━━
 
 📅 *التاريخ:* ${formattedDate}
-🏫 *الشعبة:* ${className || 'غير محدد'}
+🏫 *الشعبة:* ${className}
 👤 *الطالب:* ${studentName}
 
 ━━━━━━━━━━
@@ -1560,7 +1565,7 @@ ${action}
             const isPositive = isPositiveReport();
 
             // تحقق من البيانات
-            if (!studentName || !date || behaviors.length === 0) {
+            if (!className || !studentName || !date || behaviors.length === 0) {
                 showToast('⚠️ يرجى إكمال البيانات المطلوبة');
                 return;
             }
@@ -1578,6 +1583,7 @@ ${action}
                 // رسالة إيجابية لولي الأمر
                 message = `السلام عليكم ورحمة الله وبركاته
 ولي أمر الطالب/ة: *${studentName}*
+الشعبة: *${className}*
 
 يسرنا أن نبلغكم بتميز ابنكم/ابنتكم 🌟
 
@@ -1586,7 +1592,6 @@ ${action}
 ━━━━━━━━━━
 
 📅 *التاريخ:* ${formattedDate}
-🏫 *الشعبة:* ${className || 'غير محدد'}
 
 ━━━━━━━━━━
 ✨ *نقاط التميز والإيجابيات:*
@@ -1602,13 +1607,13 @@ ${action}
                 // رسالة سلبية لولي الأمر
                 message = `السلام عليكم ورحمة الله وبركاته
 ولي أمر الطالب/ة: *${studentName}*
+الشعبة: *${className}*
 
 ━━━━━━━━━━
 📋 *تقرير السلوك الطلابي*
 ━━━━━━━━━━
 
 📅 *التاريخ:* ${formattedDate}
-🏫 *الشعبة:* ${className || 'غير محدد'}
 
 ━━━━━━━━━━
 📌 *السلوكيات المخالفة:*
