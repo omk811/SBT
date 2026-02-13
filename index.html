@@ -1645,14 +1645,6 @@ ${action}
                 toast.classList.remove('show');
             }, 3000);
         }
-
-        // حفظ تلقائي كل 30 ثانية
-        setInterval(() => {
-            const studentName = document.getElementById('studentName').value;
-            if (studentName && getSelectedBehaviors().length > 0) {
-                saveData();
-            }
-        }, 30000);
     </script>
 </body>
 </html>
