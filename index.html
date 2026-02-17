@@ -285,13 +285,14 @@
 
         .student-chip {
             background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
-            padding: 12px 18px;
+            padding: 10px 14px;
             border-radius: 10px;
             border: 2px solid var(--border);
             font-weight: 500;
             text-align: center;
             transition: all 0.3s ease;
             cursor: pointer;
+            position: relative;
         }
 
         .student-chip:hover {
@@ -301,11 +302,77 @@
             transform: scale(1.05);
         }
 
+        .student-chip:hover .stat-badge {
+            background: rgba(255,255,255,0.25);
+            color: white;
+            border-color: rgba(255,255,255,0.4);
+        }
+
         .student-chip.selected {
             background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
             color: white;
             border-color: var(--primary);
             box-shadow: 0 4px 12px rgba(26, 77, 46, 0.3);
+        }
+
+        .student-chip.selected .stat-badge {
+            background: rgba(255,255,255,0.25);
+            color: white;
+            border-color: rgba(255,255,255,0.4);
+        }
+
+        /* ألوان الشريحة حسب نوع التقارير */
+        .student-chip.has-negative {
+            border-color: #ffb3b3;
+            background: linear-gradient(135deg, #fff8f8 0%, #fff0f0 100%);
+        }
+        .student-chip.has-positive {
+            border-color: #a5d6a7;
+            background: linear-gradient(135deg, #f7fff7 0%, #f0fff0 100%);
+        }
+        .student-chip.has-both {
+            border-color: #ffe082;
+            background: linear-gradient(135deg, #fffdf0 0%, #fff9e0 100%);
+        }
+
+        /* شارات الإحصائية */
+        .stat-badges {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+            margin-top: 5px;
+            flex-wrap: wrap;
+        }
+
+        .stat-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            padding: 1px 7px;
+            border-radius: 20px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            transition: all 0.3s;
+        }
+
+        .stat-badge.neg {
+            background: #ffebee;
+            color: #c1292e;
+            border: 1px solid #ffcdd2;
+        }
+
+        .stat-badge.pos {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+
+        .loading-stats {
+            text-align: center;
+            color: #aaa;
+            font-size: 0.8rem;
+            padding: 4px;
+            font-style: italic;
         }
 
         #reportOutput {
@@ -653,6 +720,14 @@
             <div id="studentsSection" style="display: none;">
                 <div class="form-group">
                     <label>اختر الطالب:</label>
+                    <!-- شرح الألوان -->
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px; font-size:0.8rem; align-items:center;">
+                        <span style="color:#666;">📊 الإحصائية:</span>
+                        <span style="background:#ffebee; color:#c1292e; border:1px solid #ffcdd2; padding:2px 8px; border-radius:10px;">⚠️ عدد التقارير السلبية</span>
+                        <span style="background:#e8f5e9; color:#2e7d32; border:1px solid #c8e6c9; padding:2px 8px; border-radius:10px;">⭐ عدد التقارير الإيجابية</span>
+                        <span style="background:#fff8f8; border:1px solid #ffb3b3; padding:2px 8px; border-radius:10px; color:#666;">🔴 له تقارير سلبية</span>
+                        <span style="background:#f7fff7; border:1px solid #a5d6a7; padding:2px 8px; border-radius:10px; color:#666;">🟢 له تقارير إيجابية</span>
+                    </div>
                     <div class="students-grid" id="studentsGrid"></div>
                 </div>
             </div>
@@ -1165,7 +1240,36 @@
         });
 
         // تحميل قائمة الطلاب عند اختيار الشعبة
-        function loadStudents() {
+        // ضع رابط Web App هنا
+        const GOOGLE_SHEET_URL = 'ضع_رابط_Web_App_هنا';
+
+        // تخزين إحصائيات الطلاب مؤقتاً
+        let studentsStats = {};
+
+        // جلب الإحصائيات من Google Sheets مرة واحدة
+        async function fetchStudentsStats(className) {
+            if (!GOOGLE_SHEET_URL || GOOGLE_SHEET_URL === 'ضع_رابط_Web_App_هنا') return {};
+            try {
+                const response = await fetch(GOOGLE_SHEET_URL);
+                const reports = await response.json();
+                const stats = {};
+                reports.forEach(r => {
+                    // تطابق الشعبة (الشعبة محفوظة كـ "الخامس 1" بعد replace)
+                    const rClass = (r.className || '').replace(' ', '/');
+                    if (rClass !== className) return;
+                    const name = r.studentName;
+                    if (!name) return;
+                    if (!stats[name]) stats[name] = { neg: 0, pos: 0 };
+                    if (r.isPositive) stats[name].pos++;
+                    else stats[name].neg++;
+                });
+                return stats;
+            } catch (e) {
+                return {};
+            }
+        }
+
+        async function loadStudents() {
             const className = document.getElementById('className').value;
             const studentsSection = document.getElementById('studentsSection');
             const studentsGrid = document.getElementById('studentsGrid');
@@ -1178,30 +1282,53 @@
             }
             
             const students = studentsData[className] || [];
+            studentsGrid.innerHTML = '<div class="loading-stats">⏳ جاري تحميل الإحصائيات...</div>';
+            studentsSection.style.display = 'block';
+            studentNameInput.value = '';
+
+            // جلب الإحصائيات أولاً
+            studentsStats = await fetchStudentsStats(className);
+
             studentsGrid.innerHTML = '';
             
             students.forEach(student => {
+                const stat = studentsStats[student] || { neg: 0, pos: 0 };
+                const total = stat.neg + stat.pos;
+
+                // تحديد لون الشريحة
+                let chipClass = 'student-chip';
+                if (stat.neg > 0 && stat.pos > 0) chipClass += ' has-both';
+                else if (stat.neg > 0) chipClass += ' has-negative';
+                else if (stat.pos > 0) chipClass += ' has-positive';
+
+                // بناء شارات الإحصائية
+                let badgesHTML = '';
+                if (stat.neg > 0 || stat.pos > 0) {
+                    badgesHTML = `<div class="stat-badges">`;
+                    if (stat.neg > 0)
+                        badgesHTML += `<span class="stat-badge neg">⚠️ ${stat.neg}</span>`;
+                    if (stat.pos > 0)
+                        badgesHTML += `<span class="stat-badge pos">⭐ ${stat.pos}</span>`;
+                    badgesHTML += `</div>`;
+                }
+
                 const chip = document.createElement('div');
-                chip.className = 'student-chip';
-                chip.textContent = student;
+                chip.className = chipClass;
+                chip.innerHTML = `<div style="font-size:0.9rem; line-height:1.3;">${student}</div>${badgesHTML}`;
+                chip.title = total > 0
+                    ? `${student}\nسلبي: ${stat.neg} | إيجابي: ${stat.pos} | المجموع: ${total}`
+                    : student;
+
                 chip.onclick = function() {
-                    // إزالة التحديد من جميع الطلاب
                     document.querySelectorAll('.student-chip').forEach(c => c.classList.remove('selected'));
-                    // تحديد الطالب الحالي
                     this.classList.add('selected');
-                    // تعيين الاسم
                     studentNameInput.value = student;
                 };
                 studentsGrid.appendChild(chip);
             });
-            
-            studentsSection.style.display = 'block';
-            studentNameInput.value = '';
         }
 
         // حفظ البيانات محليًا
-        // ضع رابط Web App هنا
-        const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbyjOHbQOT431IHIZvlD5Ptk_hn9KzKZz2yW0Gs-FkHubCQJ0I6eOhAzUZXk3IVoITLC/exec';
 
         async function saveData() {
             const studentName = document.getElementById('studentName').value;
@@ -1257,6 +1384,12 @@
                 
                 // mode: no-cors يعني لن نحصل على response، لكن البيانات ستصل
                 showToast('✅ تم حفظ التقرير في السحابة');
+
+                // تحديث الإحصائيات تلقائياً بعد الحفظ
+                setTimeout(() => {
+                    const currentClass = document.getElementById('className').value;
+                    if (currentClass) loadStudents();
+                }, 1500);
                 
             } catch (error) {
                 console.error('خطأ في الحفظ:', error);
@@ -1294,136 +1427,132 @@
             }
             return 2;
         }
-// دالة generateReport المحسّنة - طباعة في صفحة واحدة
 
-function generateReport() {
-    const className = document.getElementById('className').value;
-    const studentName = document.getElementById('studentName').value;
-    const date = document.getElementById('date').value;
-    const behaviors = getSelectedBehaviors();
-    const notes = document.getElementById('notes').value;
-    const action = document.getElementById('action').value;
-    const isPositive = isPositiveReport();
+        function generateReport() {
+            const className = document.getElementById('className').value;
+            const studentName = document.getElementById('studentName').value;
+            const date = document.getElementById('date').value;
+            const behaviors = getSelectedBehaviors();
+            const notes = document.getElementById('notes').value;
+            const action = document.getElementById('action').value;
+            const isPositive = isPositiveReport();
 
-    if (!studentName || !date || behaviors.length === 0) {
-        showToast('⚠️ يرجى إكمال جميع الحقول المطلوبة');
-        return;
-    }
+            if (!studentName || !date || behaviors.length === 0) {
+                showToast('⚠️ يرجى إكمال جميع الحقول المطلوبة');
+                return;
+            }
 
-    const formattedDate = new Date(date).toLocaleDateString('ar-EG', {
-        year: 'numeric', 
-        month: '2-digit', 
-        day: '2-digit'
-    });
+            const formattedDate = new Date(date).toLocaleDateString('ar-EG', {
+                year: 'numeric', 
+                month: '2-digit', 
+                day: '2-digit'
+            });
 
-    const reportTitle = isPositive ? 'تقرير تقدير وتميز طلابي' : 'تقرير السلوك الطلابي';
-    const reportColor = isPositive ? '#2e7d32' : '#1a4d2e';
-    const behaviorTitle = isPositive ? 'نقاط التميز والإيجابيات:' : 'السلوكيات المخالفة:';
+            // تحديد نوع التقرير
+            const reportTitle = isPositive ? 'تقرير تقدير وتميز طلابي' : 'تقرير السلوك الطلابي';
+            const reportColor = isPositive ? '#2e7d32' : '#1a4d2e';
+            const behaviorTitle = isPositive ? 'نقاط التميز والإيجابيات:' : 'السلوكيات المخالفة:';
 
-    // تقرير مضغوط جداً - صفحة واحدة
-    let reportHTML = `
-<div style="font-family: 'Cairo', sans-serif; padding: 8px; max-width: 100%; font-size: 9pt; line-height: 1.2;">
+            // تقرير مختصر جداً في صفحة واحدة
+            let reportHTML = `
+<div style="font-family: 'Cairo', sans-serif; padding: 15px; max-width: 100%; font-size: 10pt; line-height: 1.4;">
     
-    <!-- الترويسة المضغوطة -->
-    <div style="text-align: center; border: 2px solid ${reportColor}; padding: 5px; margin-bottom: 8px;">
-        <h2 style="margin: 0; font-size: 14pt; color: ${reportColor}; font-family: 'Amiri', serif;">${reportTitle}</h2>
-        <p style="margin: 2px 0 0 0; font-size: 7pt; color: #666;">مشروع الأستاذ خليل البلوشي</p>
+    <!-- الترويسة -->
+    <div style="text-align: center; border: 2px solid ${reportColor}; padding: 8px; margin-bottom: 12px;">
+        <h2 style="margin: 0; font-size: 16pt; color: ${reportColor}; font-family: 'Amiri', serif;">${reportTitle}</h2>
+        <p style="margin: 3px 0 0 0; font-size: 8pt; color: #666;">مشروع الأستاذ خليل البلوشي</p>
     </div>
 
-    <!-- بيانات الطالب - جدول مضغوط -->
-    <table style="width: 100%; border-collapse: collapse; margin-bottom: 6px; font-size: 8pt;">
+    <!-- بيانات الطالب -->
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 9pt;">
         <tr>
-            <td style="border: 1px solid #ddd; padding: 2px; background: #f5f5f5; width: 18%; font-weight: 600;">التاريخ:</td>
-            <td style="border: 1px solid #ddd; padding: 2px; width: 32%;">${formattedDate}</td>
-            <td style="border: 1px solid #ddd; padding: 2px; background: #f5f5f5; width: 18%; font-weight: 600;">الشعبة:</td>
-            <td style="border: 1px solid #ddd; padding: 2px; width: 32%;">${className || 'غير محدد'}</td>
+            <td style="border: 1px solid #ddd; padding: 4px; background: #f5f5f5; width: 20%; font-weight: 600;">التاريخ:</td>
+            <td style="border: 1px solid #ddd; padding: 4px; width: 30%;">${formattedDate}</td>
+            <td style="border: 1px solid #ddd; padding: 4px; background: #f5f5f5; width: 20%; font-weight: 600;">الشعبة:</td>
+            <td style="border: 1px solid #ddd; padding: 4px; width: 30%;">${className || 'غير محدد'}</td>
         </tr>
         <tr>
-            <td style="border: 1px solid #ddd; padding: 2px; background: #f5f5f5; font-weight: 600;">الطالب:</td>
-            <td colspan="3" style="border: 1px solid #ddd; padding: 2px; font-weight: 700;">${studentName}</td>
+            <td style="border: 1px solid #ddd; padding: 4px; background: #f5f5f5; font-weight: 600;">الطالب:</td>
+            <td colspan="3" style="border: 1px solid #ddd; padding: 4px; font-weight: 700;">${studentName}</td>
         </tr>
     </table>
 
-    <!-- السلوكيات - مضغوطة -->
-    <div style="margin-bottom: 6px;">
-        <div style="background: ${reportColor}; color: white; padding: 2px 6px; font-size: 9pt; font-weight: 600; margin-bottom: 3px;">
+    <!-- السلوكيات أو الإيجابيات -->
+    <div style="margin-bottom: 10px;">
+        <div style="background: ${reportColor}; color: white; padding: 4px 8px; font-size: 10pt; font-weight: 600; margin-bottom: 5px;">
             ${behaviorTitle}
         </div>
-        <ul style="margin: 0; padding-right: 15px; font-size: 8pt; line-height: 1.3;">`;
+        <ul style="margin: 0; padding-right: 20px; font-size: 9pt; line-height: 1.5;">`;
 
-    // عرض السلوكيات بشكل مضغوط
-    const maxBehaviors = behaviors.length > 10 ? 10 : behaviors.length; // حد أقصى 10 سلوكيات
-    
-    for (let i = 0; i < maxBehaviors; i++) {
-        const behavior = behaviors[i];
-        if (isPositive) {
-            reportHTML += `<li style="margin-bottom: 1px;"><span style="background: #2e7d32; color: white; padding: 0px 4px; border-radius: 2px; font-size: 6pt; font-weight: 600; margin-left: 3px;">⭐</span>${behavior}</li>`;
-        } else {
-            const level = getBehaviorLevel(behavior);
-            let badge = '', color = '';
-            if (level === 1) { badge = 'نصح'; color = '#0277bd'; }
-            else if (level === 2) { badge = 'تنبيه'; color = '#f57c00'; }
-            else { badge = 'إنذار'; color = '#c1292e'; }
-            reportHTML += `<li style="margin-bottom: 1px;"><span style="background: ${color}; color: white; padding: 0px 4px; border-radius: 2px; font-size: 6pt; font-weight: 600; margin-left: 3px;">${badge}</span>${behavior}</li>`;
-        }
-    }
-    
-    if (behaviors.length > 10) {
-        reportHTML += `<li style="font-style: italic; color: #666;">... و ${behaviors.length - 10} سلوكيات أخرى</li>`;
-    }
+            behaviors.forEach((behavior) => {
+                if (isPositive) {
+                    // للتقارير الإيجابية
+                    reportHTML += `<li style="margin-bottom: 3px;"><span style="background: #2e7d32; color: white; padding: 1px 6px; border-radius: 3px; font-size: 7pt; font-weight: 600; margin-left: 5px;">⭐</span>${behavior}</li>`;
+                } else {
+                    // للتقارير السلبية
+                    const level = getBehaviorLevel(behavior);
+                    let badge = '';
+                    let color = '';
+                    
+                    if (level === 1) { badge = 'نصح'; color = '#0277bd'; }
+                    else if (level === 2) { badge = 'تنبيه'; color = '#f57c00'; }
+                    else { badge = 'إنذار'; color = '#c1292e'; }
+                    
+                    reportHTML += `<li style="margin-bottom: 3px;"><span style="background: ${color}; color: white; padding: 1px 6px; border-radius: 3px; font-size: 7pt; font-weight: 600; margin-left: 5px;">${badge}</span>${behavior}</li>`;
+                }
+            });
 
-    reportHTML += `</ul></div>`;
+            reportHTML += `</ul></div>`;
 
-    // الملاحظات - مضغوطة
-    if (notes) {
-        const shortNotes = notes.length > 200 ? notes.substring(0, 200) + '...' : notes;
-        const notesColor = isPositive ? '#2e7d32' : '#4f9d69';
-        const notesBg = isPositive ? '#e8f5e9' : '#f8f9fa';
-        reportHTML += `
-    <div style="margin-bottom: 6px;">
-        <div style="background: ${notesColor}; color: white; padding: 2px 6px; font-size: 9pt; font-weight: 600; margin-bottom: 3px;">
+            // الملاحظات (إذا وجدت)
+            if (notes) {
+                const notesColor = isPositive ? '#2e7d32' : '#4f9d69';
+                const notesBg = isPositive ? '#e8f5e9' : '#f8f9fa';
+                reportHTML += `
+    <div style="margin-bottom: 10px;">
+        <div style="background: ${notesColor}; color: white; padding: 4px 8px; font-size: 10pt; font-weight: 600; margin-bottom: 5px;">
             الملاحظات:
         </div>
-        <div style="padding: 3px 6px; background: ${notesBg}; border-right: 2px solid ${notesColor}; font-size: 7.5pt; line-height: 1.2;">
-            ${shortNotes.replace(/\n/g, '<br>')}
+        <div style="padding: 5px 8px; background: ${notesBg}; border-right: 3px solid ${notesColor}; font-size: 9pt; line-height: 1.4;">
+            ${notes.replace(/\n/g, '<br>')}
         </div>
     </div>`;
-    }
+            }
 
-    // الإجراء - مضغوط
-    if (!isPositive && action) {
-        reportHTML += `
-    <div style="margin-bottom: 6px;">
-        <div style="background: #d4af37; color: white; padding: 2px 6px; font-size: 9pt; font-weight: 600; margin-bottom: 3px;">
+            // الإجراء المتخذ (للتقارير السلبية فقط)
+            if (!isPositive && action) {
+                reportHTML += `
+    <div style="margin-bottom: 10px;">
+        <div style="background: #d4af37; color: white; padding: 4px 8px; font-size: 10pt; font-weight: 600; margin-bottom: 5px;">
             الإجراء المتخذ:
         </div>
-        <div style="padding: 3px 6px; background: #fffbf0; border: 1px solid #d4af37; font-size: 8pt; font-weight: 600;">
+        <div style="padding: 5px 8px; background: #fffbf0; border: 1px solid #d4af37; font-size: 9pt; font-weight: 600;">
             ${action}
         </div>
     </div>`;
-    }
+            }
 
-    // التوقيعات - مضغوطة
-    reportHTML += `
-    <div style="display: flex; justify-content: space-between; margin-top: 8px; gap: 8px;">
+            // التوقيعات
+            reportHTML += `
+    <div style="display: flex; justify-content: space-between; margin-top: 15px; gap: 10px;">
         <div style="width: 48%; text-align: center;">
-            <div style="border-bottom: 1px solid #000; height: 25px; margin-bottom: 2px;"></div>
-            <p style="margin: 0; font-size: 7pt; font-weight: 600;">توقيع المعلم :الأستاذ خليل البلوشي</p>
+            <div style="border-bottom: 1px solid #000; height: 35px; margin-bottom: 3px;"></div>
+            <p style="margin: 0; font-size: 8pt; font-weight: 600;">توقيع المعلم</p>
         </div>
         <div style="width: 48%; text-align: center;">
-            <div style="border-bottom: 1px solid #000; height: 25px; margin-bottom: 2px;"></div>
-            <p style="margin: 0; font-size: 7pt; font-weight: 600;">توقيع ولي الأمر</p>
+            <div style="border-bottom: 1px solid #000; height: 35px; margin-bottom: 3px;"></div>
+            <p style="margin: 0; font-size: 8pt; font-weight: 600;">توقيع ولي الأمر</p>
         </div>
     </div>
 
 </div>`;
 
-    const reportDiv = document.getElementById('reportOutput');
-    reportDiv.innerHTML = reportHTML;
-    reportDiv.classList.add('show');
+            const reportDiv = document.getElementById('reportOutput');
+            reportDiv.innerHTML = reportHTML;
+            reportDiv.classList.add('show');
 
-    showToast('✅ تم إنشاء التقرير بنجاح');
-}
+            showToast('✅ تم إنشاء التقرير بنجاح');
+        }
 
         function printReport() {
             const reportDiv = document.getElementById('reportOutput');
@@ -1473,36 +1602,35 @@ function generateReport() {
             let message = '';
 
             if (isPositive) {
-                // رسالة إيجابية لولي الأمر
-                message = `السلام عليكم ورحمة الله وبركاته
-ولي أمر الطالب: *${studentName}*
-يسرنا أن نبلغكم بتميز ابنكم 🌟
-━━━━━━━━━
+                // رسالة للتقرير الإيجابي
+                message = `━━━━━━━━━━
 ⭐ *تقرير تقدير وتميز طلابي*
-━━━━━━━━━
+━━━━━━━━━━
 📅 *التاريخ:* ${formattedDate}
 🏫 *الشعبة:* ${className || 'غير محدد'}
-━━━━━━━━━
+👤 *الطالب:* ${studentName}
+━━━━━━━━━━
 ✨ *نقاط التميز والإيجابيات:*
-━━━━━━━━━
+━━━━━━━━━━
 `;
+
                 behaviors.forEach((behavior, index) => {
                     message += `${index + 1}. ⭐ ${behavior}\n\n`;
                 });
 
             } else {
-                // رسالة سلبية لولي الأمر
-                message = `السلام عليكم ورحمة الله وبركاته
-ولي أمر الطالب: *${studentName}*
-━━━━━━━━━
+                // رسالة للتقرير السلبي
+                message = `━━━━━━━━━━
 📋 *تقرير السلوك الطلابي*
-━━━━━━━━━
+━━━━━━━━━━
 📅 *التاريخ:* ${formattedDate}
 🏫 *الشعبة:* ${className || 'غير محدد'}
-━━━━━━━━━
+👤 *الطالب:* ${studentName}
+━━━━━━━━━━
 📌 *السلوكيات المخالفة:*
-━━━━━━━━━
+━━━━━━━━━━
 `;
+
                 behaviors.forEach((behavior, index) => {
                     const level = getBehaviorLevel(behavior);
                     let badge = '';
@@ -1516,32 +1644,29 @@ function generateReport() {
             }
 
             if (notes) {
-                message += `━━━━━━━━━
+                message += `━━━━━━━━━━
 📝 *الملاحظات:*
-━━━━━━━━━
+━━━━━━━━━━
 ${notes}
+
 `;
             }
 
             if (!isPositive && action) {
-                message += `━━━━━━━━━
+                message += `━━━━━━━━━━
 ⚖️ *الإجراء المتخذ:*
-━━━━━━━━━
+━━━━━━━━━━
 ${action}
+
 `;
             }
 
             if (isPositive) {
-                message += `━━━━━━━━━
-نشكركم على دعمكم المستمر لابنكم
-ونتمنى له مزيداً من التفوق والتميز 🌟
-بارك الله فيكم وفي جهودكم معنا.
-━━━━━━━━━`;
-            } else {
-                message += `
-نرجو منكم التعاون معنا لتحسين سلوك الطالب.
-شكراً لكم.`;
-          }
+                message += `━━━━━━━━━━
+نشكركم على دعمكم المستمر لابنكم/ابنتكم
+ونتمنى له/لها مزيداً من التفوق والتميز 🌟
+━━━━━━━━━━`;
+            }
 
             // دالة لفتح واتساب حسب نوع الجهاز
             function openWhatsApp(message) {
@@ -1580,7 +1705,7 @@ ${action}
             if (!phoneNumber) {
                 return;
             }
-            
+
             // إزالة المسافات والرموز
             const cleanNumber = phoneNumber.replace(/[\s\-\+\(\)]/g, '');
 
@@ -1610,33 +1735,36 @@ ${action}
             if (isPositive) {
                 // رسالة إيجابية لولي الأمر
                 message = `السلام عليكم ورحمة الله وبركاته
-ولي أمر الطالب: *${studentName}*
-يسرنا أن نبلغكم بتميز ابنكم 🌟
-━━━━━━━━━
+ولي أمر الطالب/ة: *${studentName}*
+يسرنا أن نبلغكم بتميز ابنكم/ابنتكم 🌟
+━━━━━━━━━━
 ⭐ *تقرير تقدير وتميز طلابي*
-━━━━━━━━━
+━━━━━━━━━━
 📅 *التاريخ:* ${formattedDate}
 🏫 *الشعبة:* ${className || 'غير محدد'}
-━━━━━━━━━
+━━━━━━━━━━
 ✨ *نقاط التميز والإيجابيات:*
-━━━━━━━━━
+━━━━━━━━━━
 `;
+
                 behaviors.forEach((behavior, index) => {
                     message += `${index + 1}. ⭐ ${behavior}\n\n`;
                 });
+
             } else {
                 // رسالة سلبية لولي الأمر
                 message = `السلام عليكم ورحمة الله وبركاته
-ولي أمر الطالب: *${studentName}*
-━━━━━━━━━
+ولي أمر الطالب/ة: *${studentName}*
+━━━━━━━━━━
 📋 *تقرير السلوك الطلابي*
-━━━━━━━━━
+━━━━━━━━━━
 📅 *التاريخ:* ${formattedDate}
 🏫 *الشعبة:* ${className || 'غير محدد'}
-━━━━━━━━━
+━━━━━━━━━━
 📌 *السلوكيات المخالفة:*
-━━━━━━━━━
+━━━━━━━━━━
 `;
+
                 behaviors.forEach((behavior, index) => {
                     const level = getBehaviorLevel(behavior);
                     let badge = '';
@@ -1648,36 +1776,39 @@ ${action}
                     message += `${index + 1}. ${badge}\n   ${behavior}\n\n`;
                 });
             }
+
             if (notes) {
-                message += `━━━━━━━━━
+                message += `━━━━━━━━━━
 📝 *الملاحظات:*
 ━━━━━━━━━
 ${notes}
+
 `;
             }
 
             if (!isPositive && action) {
-                message += `━━━━━━━━━
+                message += `━━━━━━━━━━
 ⚖️ *الإجراء المتخذ:*
-━━━━━━━━━
+━━━━━━━━━━
 ${action}
 
 `;
             }
 
             if (isPositive) {
-                message += `━━━━━━━━━
-نشكركم على دعمكم المستمر لابنكم
-ونتمنى له مزيداً من التفوق والتميز 🌟
+              message += `━━━━━━━━━━
+
+نشكركم على دعمكم المستمر لابنكم/ابنتكم
+ونتمنى له/لها مزيداً من التفوق والتميز 🌟
 بارك الله فيكم وفي جهودكم معنا.
-━━━━━━━━━`;
+━━━━━━━━━━`;
             } else {
                 message += `
-نرجو منكم التعاون معنا لتحسين سلوك الطالب.
+نرجو منكم التعاون معنا لتحسين سلوك الطالب/ة.
 شكراً لكم.`;
             }
 
-           // كشف نوع الجهاز
+            // كشف نوع الجهاز
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             
             // إنشاء رابط واتساب مع الرقم
