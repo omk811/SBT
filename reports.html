@@ -422,9 +422,9 @@
             </div>
 
             <div class="filter-buttons">
-                <button class="filter-btn active" onclick="setFilter('all')">الكل</button>
-                <button class="filter-btn" onclick="setFilter('positive')">إيجابية</button>
-                <button class="filter-btn" onclick="setFilter('negative')">سلبية</button>
+                <button class="filter-btn active" onclick="setFilter('all', this)">الكل</button>
+                <button class="filter-btn" onclick="setFilter('positive', this)">إيجابية</button>
+                <button class="filter-btn" onclick="setFilter('negative', this)">سلبية</button>
             </div>
         </div>
 
@@ -438,6 +438,17 @@
         const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbyjOHbQOT431IHIZvlD5Ptk_hn9KzKZz2yW0Gs-FkHubCQJ0I6eOhAzUZXk3IVoITLC/exec';
         
         let currentFilter = 'all';
+        let allReports = [];
+        function accessCode_(){ return sessionStorage.getItem('accessCode') || ''; }
+        async function api_(action, payload = {}) {
+            const response = action === 'list'
+              ? await fetch(`${GOOGLE_SHEET_URL}?action=list&accessCode=${encodeURIComponent(accessCode_())}`, {cache:'no-store'})
+              : await fetch(GOOGLE_SHEET_URL, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({action, accessCode:accessCode_(), ...payload})});
+            const result = await response.json();
+            if (!result.success) throw new Error(result.error || 'تعذر تنفيذ العملية');
+            return result;
+        }
+        function escapeHTML(value='') { return String(value).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
 
         async function loadReports() {
             if (!GOOGLE_SHEET_URL || GOOGLE_SHEET_URL === 'ضع_رابط_Web_App_هنا') {
@@ -449,12 +460,9 @@
             try {
                 showToast('⏳ جاري تحميل التقارير...');
                 
-                const response = await fetch(GOOGLE_SHEET_URL);
-                const reports = await response.json();
-                
-                if (reports.error) {
-                    throw new Error(reports.error);
-                }
+                const result = await api_('list');
+                const reports = result.records;
+                allReports = reports;
                 
                 // تحديث الإحصائيات
                 document.getElementById('totalReports').textContent = reports.length;
@@ -477,8 +485,7 @@
             }
 
             try {
-                const response = await fetch(GOOGLE_SHEET_URL);
-                const reports = await response.json();
+                const reports = allReports;
                 
                 const searchTerm = document.getElementById('searchInput').value.toLowerCase();
                 
@@ -520,9 +527,9 @@
                 <div class="report-card ${report.isPositive ? 'positive' : ''}">
                     <div class="report-header">
                         <div class="student-info">
-                            <h3>👤 ${report.studentName}</h3>
+                            <h3>👤 ${escapeHTML(report.studentName)}</h3>
                             <div class="meta">
-                                <span>🏫 الشعبة: ${report.className || 'غير محدد'}</span>
+                                <span>🏫 الشعبة: ${escapeHTML(report.className || 'غير محدد')}</span>
                                 <span>📅 ${new Date(report.date).toLocaleDateString('ar-EG')}</span>
                             </div>
                         </div>
@@ -540,7 +547,7 @@
                                 <span class="behavior-badge ${getBadgeClass(behavior, report.isPositive)}">
                                     ${getBadgeText(behavior, report.isPositive)}
                                 </span>
-                                <span>${behavior}</span>
+                                <span>${escapeHTML(behavior)}</span>
                             </div>
                         `).join('')}
                     </div>
@@ -548,14 +555,14 @@
                     ${report.notes ? `
                         <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 15px; border-right: 3px solid var(--info);">
                             <strong>📝 ملاحظات:</strong><br>
-                            <span style="color: var(--text-secondary);">${report.notes}</span>
+                            <span style="color: var(--text-secondary);">${escapeHTML(report.notes)}</span>
                         </div>
                     ` : ''}
                     
                     ${report.action ? `
                         <div style="background: #fffbf0; padding: 12px; border-radius: 8px; margin-bottom: 15px; border-right: 3px solid var(--warning);">
                             <strong>⚖️ الإجراء:</strong><br>
-                            <span style="color: var(--text-secondary);">${report.action}</span>
+                            <span style="color: var(--text-secondary);">${escapeHTML(report.action)}</span>
                         </div>
                     ` : ''}
                     
@@ -563,10 +570,10 @@
                         <button class="action-btn btn-whatsapp" onclick="shareToWhatsApp('${report.timestamp}')">
                             📱 واتساب
                         </button>
-                        <button class="action-btn btn-edit" onclick="editReport('${report.timestamp}')">
+                        <button class="action-btn btn-edit" onclick="editReport('${report.id}')">
                             ✏️ تعديل
                         </button>
-                        <button class="action-btn btn-delete" onclick="deleteReport('${report.timestamp}')">
+                        <button class="action-btn btn-delete" onclick="deleteReport('${report.id}')">
                             🗑️ حذف
                         </button>
                     </div>
@@ -604,18 +611,18 @@
             return 'تنبيه';
         }
 
-        function setFilter(filter) {
+        function setFilter(filter, button) {
             currentFilter = filter;
             
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
-            event.target.classList.add('active');
+            if (button) button.classList.add('active');
             
             filterReports();
         }
 
-        async function deleteReport(timestamp) {
+        async function deleteReport(id) {
             if (!confirm('هل أنت متأكد من حذف هذا التقرير؟\n(سيتم الحذف من السحابة)')) return;
             
             if (!GOOGLE_SHEET_URL || GOOGLE_SHEET_URL === 'ضع_رابط_Web_App_هنا') {
@@ -626,14 +633,13 @@
             try {
                 showToast('⏳ جاري الحذف...');
                 
-                // للأسف mode: no-cors لا يسمح بإرسال معاملات GET
-                // سنحتاج لحل بديل - سأضع ملاحظة في الدليل
-                
-                showToast('⚠️ الحذف من الجدول يتم يدوياً حالياً');
-                
-                // يمكنك فتح Google Sheets مباشرة
-                const sheetId = GOOGLE_SHEET_URL.split('/')[5];
-                window.open(`https://docs.google.com/spreadsheets/d/${sheetId}`, '_blank');
+                await api_('delete', {id});
+                allReports = allReports.filter(r => r.id !== id);
+                document.getElementById('totalReports').textContent = allReports.length;
+                document.getElementById('positiveReports').textContent = allReports.filter(r=>r.isPositive).length;
+                document.getElementById('negativeReports').textContent = allReports.filter(r=>!r.isPositive).length;
+                filterReports();
+                showToast('✅ تم حذف التقرير');
                 
             } catch (error) {
                 console.error('خطأ في الحذف:', error);
@@ -642,15 +648,21 @@
         }
 
         function editReport(id) {
-            showToast('⚠️ ميزة التعديل قيد التطوير');
-            // يمكن تطويرها لاحقاً
+            const report = allReports.find(r => r.id === id);
+            if (!report) return;
+            const notes = prompt('عدّل الملاحظات:', report.notes || '');
+            if (notes === null) return;
+            const actionTaken = prompt('عدّل الإجراء المتخذ:', report.action || '');
+            if (actionTaken === null) return;
+            api_('update', {...report, notes, actionTaken}).then(() => {
+                report.notes = notes; report.action = actionTaken;
+                filterReports(); showToast('✅ تم تعديل التقرير');
+            }).catch(e => showToast(`❌ ${e.message}`));
         }
 
         async function shareToWhatsApp(timestamp) {
             try {
-                const response = await fetch(GOOGLE_SHEET_URL);
-                const reports = await response.json();
-                const report = reports.find(r => r.timestamp === timestamp);
+                const report = allReports.find(r => r.timestamp === timestamp);
                 
                 if (!report) {
                     showToast('⚠️ لم يتم العثور على التقرير');
