@@ -394,6 +394,29 @@
             animation: slideDown 0.4s ease;
         }
 
+        .student-report { --report-color:#1a4d2e; --report-soft:#edf7f1; max-width:900px; margin:auto; color:#17231c; font-size:1rem; line-height:1.8; white-space:normal; }
+        .student-report.positive { --report-color:#247a47; --report-soft:#edf9f1; }
+        .student-report.negative { --report-color:#b85a18; --report-soft:#fff6ed; }
+        .report-top { display:grid; grid-template-columns:72px 1fr auto; align-items:center; gap:18px; padding:20px; border:2px solid var(--report-color); border-radius:18px; background:linear-gradient(135deg,#fff,var(--report-soft)); }
+        .report-mark { width:64px; height:64px; display:grid; place-items:center; border-radius:18px; background:var(--report-color); color:#fff; font-size:2rem; }
+        .report-heading h2 { margin:0; color:var(--report-color); font:700 1.8rem 'Amiri',serif; }
+        .report-heading p { margin:2px 0 0; color:#5d6a62; }
+        .report-kind { padding:8px 14px; border-radius:999px; color:#fff; background:var(--report-color); font-weight:800; white-space:nowrap; }
+        .report-meta { display:grid; grid-template-columns:2fr 1fr 1fr; gap:12px; margin:18px 0; }
+        .meta-card { padding:12px 16px; border:1px solid #dce5df; border-radius:12px; background:#fff; }
+        .meta-card small { display:block; color:#66736b; font-size:.78rem; }
+        .meta-card strong { color:#1d3427; font-size:1rem; }
+        .report-section { margin-top:14px; border:1px solid #dce5df; border-radius:14px; overflow:hidden; break-inside:avoid; }
+        .report-section-title { padding:9px 15px; color:#fff; background:var(--report-color); font-weight:800; }
+        .report-items { display:grid; gap:9px; padding:14px; background:#fff; }
+        .report-item { display:flex; align-items:flex-start; gap:10px; padding:10px 12px; border-radius:10px; background:var(--report-soft); }
+        .report-item-index { flex:0 0 28px; height:28px; display:grid; place-items:center; border-radius:50%; color:#fff; background:var(--report-color); font-weight:800; font-size:.8rem; }
+        .report-text { padding:13px 16px; background:#fff; white-space:pre-wrap; }
+        .report-message { margin-top:15px; padding:13px 16px; border-right:5px solid var(--report-color); border-radius:10px; background:var(--report-soft); color:#30483a; }
+        .report-signatures { display:grid; grid-template-columns:1fr 1fr; gap:32px; margin-top:24px; text-align:center; }
+        .signature-line { height:40px; border-bottom:1px solid #66736b; margin-bottom:5px; }
+        .report-credit { margin-top:18px; padding-top:10px; border-top:1px dashed #bdc9c1; text-align:center; color:#5d6a62; font-size:.85rem; }
+
         @keyframes slideDown {
             from {
                 opacity: 0;
@@ -509,6 +532,12 @@
             #reportOutput * {
                 page-break-inside: avoid !important;
             }
+
+            .student-report { font-size:11pt !important; }
+            .student-report, .student-report * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+            .report-top { border-radius:8px !important; padding:14px !important; }
+            .report-heading h2 { font-size:20pt !important; }
+            .report-section { border-radius:6px !important; }
             
             /* ضمان طباعة صفحة واحدة فقط */
             @page {
@@ -543,6 +572,13 @@
                 width: 100%;
                 justify-content: center;
             }
+
+            .report-top { grid-template-columns:54px 1fr; padding:14px; }
+            .report-mark { width:50px; height:50px; font-size:1.5rem; }
+            .report-kind { grid-column:1 / -1; justify-self:start; }
+            .report-heading h2 { font-size:1.45rem; }
+            .report-meta { grid-template-columns:1fr; }
+            .report-signatures { gap:14px; }
         }
 
         /* صفحة تسجيل الدخول */
@@ -1000,6 +1036,9 @@
             <button class="btn btn-secondary" onclick="printReport()">
                 🖨️ طباعة التقرير
             </button>
+            <button class="btn" onclick="copyReportText()" style="background:#455a64;color:white;">
+                📄 نسخ نص التقرير
+            </button>
             <button class="btn btn-success" onclick="shareWhatsApp()">
                 📱 إرسال عبر واتساب
             </button>
@@ -1237,7 +1276,7 @@
 
         // تحميل قائمة الطلاب عند اختيار الشعبة
         // ضع رابط Web App هنا
-        const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbyjOHbQOT431IHIZvlD5Ptk_hn9KzKZz2yW0Gs-FkHubCQJ0I6eOhAzUZXk3IVoITLC/exec';
+        const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbwIR8Utx0pbm02LfF45HR1JmUkgXSZwfGE7xS29Opypii9KUbp1NgET2ShwyOaewNY/exec';
 
         // تخزين إحصائيات الطلاب مؤقتاً
         let studentsStats = {};
@@ -1424,6 +1463,10 @@
             return 2;
         }
 
+        function escapeReportHTML(value = '') {
+            return String(value).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+        }
+
         function generateReport() {
             const className = document.getElementById('className').value;
             const studentName = document.getElementById('studentName').value;
@@ -1444,110 +1487,52 @@
                 day: '2-digit'
             });
 
-            // تحديد نوع التقرير
-            const reportTitle = isPositive ? 'تقرير تقدير وتميز طلابي' : 'تقرير السلوك الطلابي';
-            const reportColor = isPositive ? '#2e7d32' : '#1a4d2e';
-            const behaviorTitle = isPositive ? 'نقاط التميز والإيجابيات:' : 'السلوكيات المخالفة:';
-
-            // تقرير مختصر جداً في صفحة واحدة
+            const reportTitle = isPositive ? 'تقرير تقدير وتميّز طلابي' : 'تقرير متابعة سلوكية وتربوية';
+            const behaviorTitle = isPositive ? 'جوانب التميّز والإيجابيات' : 'الملاحظات السلوكية المرصودة';
+            const safeName = escapeReportHTML(studentName), safeClass = escapeReportHTML(className || 'غير محدد');
+            const itemsHTML = behaviors.map((behavior,index) => `
+                <div class="report-item"><span class="report-item-index">${index + 1}</span><span>${escapeReportHTML(behavior)}</span></div>`).join('');
             let reportHTML = `
-<div style="font-family: 'Cairo', sans-serif; padding: 15px; max-width: 100%; font-size: 10pt; line-height: 1.4;">
-    
-    <!-- الترويسة -->
-    <div style="text-align: center; border: 2px solid ${reportColor}; padding: 8px; margin-bottom: 12px;">
-        <h2 style="margin: 0; font-size: 16pt; color: ${reportColor}; font-family: 'Amiri', serif;">${reportTitle}</h2>
-        <p style="margin: 3px 0 0 0; font-size: 8pt; color: #666;">مشروع الأستاذ خليل البلوشي</p>
-    </div>
+<article class="student-report ${isPositive ? 'positive' : 'negative'}" aria-label="${reportTitle}">
+  <header class="report-top">
+    <div class="report-mark">${isPositive ? '⭐' : '📋'}</div>
+    <div class="report-heading"><h2>${reportTitle}</h2><p>مادة اللغة العربية – الصف الخامس الأساسي</p></div>
+    <span class="report-kind">${isPositive ? 'تقرير إيجابي' : 'متابعة تربوية'}</span>
+  </header>
+  <section class="report-meta">
+    <div class="meta-card"><small>اسم الطالب</small><strong>${safeName}</strong></div>
+    <div class="meta-card"><small>الشعبة</small><strong>${safeClass}</strong></div>
+    <div class="meta-card"><small>التاريخ</small><strong>${formattedDate}</strong></div>
+  </section>
+  <section class="report-section"><div class="report-section-title">${behaviorTitle}</div><div class="report-items">${itemsHTML}</div></section>`;
 
-    <!-- بيانات الطالب -->
-    <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 9pt;">
-        <tr>
-            <td style="border: 1px solid #ddd; padding: 4px; background: #f5f5f5; width: 20%; font-weight: 600;">التاريخ:</td>
-            <td style="border: 1px solid #ddd; padding: 4px; width: 30%;">${formattedDate}</td>
-            <td style="border: 1px solid #ddd; padding: 4px; background: #f5f5f5; width: 20%; font-weight: 600;">الشعبة:</td>
-            <td style="border: 1px solid #ddd; padding: 4px; width: 30%;">${className || 'غير محدد'}</td>
-        </tr>
-        <tr>
-            <td style="border: 1px solid #ddd; padding: 4px; background: #f5f5f5; font-weight: 600;">الطالب:</td>
-            <td colspan="3" style="border: 1px solid #ddd; padding: 4px; font-weight: 700;">${studentName}</td>
-        </tr>
-    </table>
+            if (notes) reportHTML += `<section class="report-section"><div class="report-section-title">ملاحظات المعلم</div><div class="report-text">${escapeReportHTML(notes)}</div></section>`;
+            if (!isPositive && action) reportHTML += `<section class="report-section"><div class="report-section-title">الإجراء التربوي المتخذ</div><div class="report-text">${escapeReportHTML(action)}</div></section>`;
 
-    <!-- السلوكيات أو الإيجابيات -->
-    <div style="margin-bottom: 10px;">
-        <div style="background: ${reportColor}; color: white; padding: 4px 8px; font-size: 10pt; font-weight: 600; margin-bottom: 5px;">
-            ${behaviorTitle}
-        </div>
-        <ul style="margin: 0; padding-right: 20px; font-size: 9pt; line-height: 1.5;">`;
-
-            behaviors.forEach((behavior) => {
-                if (isPositive) {
-                    // للتقارير الإيجابية
-                    reportHTML += `<li style="margin-bottom: 3px;"><span style="background: #2e7d32; color: white; padding: 1px 6px; border-radius: 3px; font-size: 7pt; font-weight: 600; margin-left: 5px;">⭐</span>${behavior}</li>`;
-                } else {
-                    // للتقارير السلبية
-                    const level = getBehaviorLevel(behavior);
-                    let badge = '';
-                    let color = '';
-                    
-                    if (level === 1) { badge = 'نصح'; color = '#0277bd'; }
-                    else if (level === 2) { badge = 'تنبيه'; color = '#f57c00'; }
-                    else { badge = 'إنذار'; color = '#c1292e'; }
-                    
-                    reportHTML += `<li style="margin-bottom: 3px;"><span style="background: ${color}; color: white; padding: 1px 6px; border-radius: 3px; font-size: 7pt; font-weight: 600; margin-left: 5px;">${badge}</span>${behavior}</li>`;
-                }
-            });
-
-            reportHTML += `</ul></div>`;
-
-            // الملاحظات (إذا وجدت)
-            if (notes) {
-                const notesColor = isPositive ? '#2e7d32' : '#4f9d69';
-                const notesBg = isPositive ? '#e8f5e9' : '#f8f9fa';
-                reportHTML += `
-    <div style="margin-bottom: 10px;">
-        <div style="background: ${notesColor}; color: white; padding: 4px 8px; font-size: 10pt; font-weight: 600; margin-bottom: 5px;">
-            الملاحظات:
-        </div>
-        <div style="padding: 5px 8px; background: ${notesBg}; border-right: 3px solid ${notesColor}; font-size: 9pt; line-height: 1.4;">
-            ${notes.replace(/\n/g, '<br>')}
-        </div>
-    </div>`;
-            }
-
-            // الإجراء المتخذ (للتقارير السلبية فقط)
-            if (!isPositive && action) {
-                reportHTML += `
-    <div style="margin-bottom: 10px;">
-        <div style="background: #d4af37; color: white; padding: 4px 8px; font-size: 10pt; font-weight: 600; margin-bottom: 5px;">
-            الإجراء المتخذ:
-        </div>
-        <div style="padding: 5px 8px; background: #fffbf0; border: 1px solid #d4af37; font-size: 9pt; font-weight: 600;">
-            ${action}
-        </div>
-    </div>`;
-            }
-
-            // التوقيعات
-            reportHTML += `
-    <div style="display: flex; justify-content: space-between; margin-top: 15px; gap: 10px;">
-        <div style="width: 48%; text-align: center;">
-            <div style="border-bottom: 1px solid #000; height: 35px; margin-bottom: 3px;"></div>
-            <p style="margin: 0; font-size: 8pt; font-weight: 600;">توقيع المعلم</p>
-        </div>
-        <div style="width: 48%; text-align: center;">
-            <div style="border-bottom: 1px solid #000; height: 35px; margin-bottom: 3px;"></div>
-            <p style="margin: 0; font-size: 8pt; font-weight: 600;">توقيع ولي الأمر</p>
-        </div>
-    </div>
-
-</div>`;
+            reportHTML += `<div class="report-message">${isPositive
+              ? 'نثمّن هذا الأداء المتميّز، ونشكر الأسرة على دعمها المستمر، مع تمنياتنا للطالب بمزيد من النجاح.'
+              : 'نأمل تعاون الأسرة في متابعة الطالب وتعزيز السلوك الإيجابي، بما يسهم في تقدمه الدراسي والتربوي.'}</div>
+  <div class="report-signatures"><div><div class="signature-line"></div><strong>توقيع المعلم</strong></div><div><div class="signature-line"></div><strong>توقيع ولي الأمر</strong></div></div>
+  <footer class="report-credit">إعداد ومتابعة: <strong>الأستاذ خليل البلوشي</strong></footer>
+</article>`;
 
             const reportDiv = document.getElementById('reportOutput');
             reportDiv.innerHTML = reportHTML;
             reportDiv.classList.add('show');
 
             showToast('✅ تم إنشاء التقرير بنجاح');
+        }
+
+        async function copyReportText() {
+            const reportDiv = document.getElementById('reportOutput');
+            if (!reportDiv.classList.contains('show')) { showToast('⚠️ يرجى إنشاء التقرير أولاً'); return; }
+            const text = reportDiv.innerText.trim();
+            try { await navigator.clipboard.writeText(text); }
+            catch (_) {
+                const area=document.createElement('textarea'); area.value=text; area.style.position='fixed'; area.style.opacity='0';
+                document.body.appendChild(area); area.select(); document.execCommand('copy'); area.remove();
+            }
+            showToast('✅ تم نسخ نص التقرير');
         }
 
         function printReport() {
