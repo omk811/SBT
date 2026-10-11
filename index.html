@@ -706,30 +706,32 @@
             display: block;
         }
     </style>
+<script src="sbt-common.js"></script>
+<style>button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #0277bd;outline-offset:3px}.toast{max-width:calc(100vw - 24px);overflow-wrap:anywhere}@media(max-width:400px){body{padding:10px}.container,.section{min-width:0}.login-card{padding:22px}}</style>
 </head>
 <body>
     <!-- صفحة تسجيل الدخول -->
     <div id="loginPage">
         <div class="login-card">
             <div class="login-icon">🔐</div>
-            <h1>تسجيل الدخول</h1>
+            <h1>تسجيل الدخول</h1><button type="button" onclick="SBT.logout()">إنهاء الجلسة</button>
             <p>نظام رصد السلوكيات الطلابية</p>
             
-            <input type="text" id="employeeId" placeholder="أدخل الرقم الوظيفي" maxlength="8" autocomplete="off">
+            <input type="password" id="employeeId" placeholder="أدخل رمز الدخول" maxlength="128" autocomplete="current-password" aria-label="رمز الدخول">
             
             <button id="loginBtn" onclick="login()">دخول النظام</button>
             
             <div id="errorMessage" class="error-message">
-                ❌ الرقم الوظيفي غير صحيح!
+                تعذر الدخول؛ تحقق من رمز الدخول والاتصال وإعداد الخادم.
             </div>
         </div>
     </div>
 
     <!-- التطبيق الرئيسي -->
     <div id="mainApp">
-    <div id="toast" class="toast"></div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
     
-    <div class="container">
+    <div class="container"><button class="btn" onclick="SBT.logout()">تسجيل الخروج</button>
         <header>
             <h1>🎓 نظام رصد السلوكيات الطلابية</h1>
             <p>مشروع تربوي لمتابعة سلوك الطلبة والتواصل مع أولياء الأمور</p>
@@ -848,59 +850,59 @@
                 <div class="category-header" style="background: linear-gradient(135deg, #f57c00 0%, #ef6c00 100%);">📝 الملاحظات التحصيلية</div>
                 
                 <div class="behavior-item">
-                    <input type="checkbox" class="negative-behavior" id="t1" value="عدم إحضار الكتب والدفاتر">
+                    <input type="checkbox" class="academic-behavior" id="t1" value="عدم إحضار الكتب والدفاتر">
                     <label for="t1">عدم إحضار الكتب والدفاتر المدرسية</label>
                 </div>
                 <div class="behavior-item">
-                    <input type="checkbox" class="negative-behavior" id="t2" value="الإهمال في أداء الواجبات المنزلية">
+                    <input type="checkbox" class="academic-behavior" id="t2" value="الإهمال في أداء الواجبات المنزلية">
                     <label for="t2">الإهمال المستمر في أداء الواجبات المنزلية</label>
                 </div>
                 <div class="behavior-item">
-                    <input type="checkbox" class="negative-behavior" id="t3" value="عدم إكمال الأنشطة الصفية">
+                    <input type="checkbox" class="academic-behavior" id="t3" value="عدم إكمال الأنشطة الصفية">
                     <label for="t3">عدم إكمال الأنشطة الصفية</label>
                 </div>
                 <div class="behavior-item">
-                    <input type="checkbox" class="negative-behavior" id="t4" value="ضعف التركيز والانتباه">
+                    <input type="checkbox" class="academic-behavior" id="t4" value="ضعف التركيز والانتباه">
                     <label for="t4">ضعف التركيز والانتباه أثناء الشرح</label>
                 </div>
                 <div class="behavior-item">
-                    <input type="checkbox" class="negative-behavior" id="t5" value="عدم المشاركة في الأنشطة الصفية">
+                    <input type="checkbox" class="academic-behavior" id="t5" value="عدم المشاركة في الأنشطة الصفية">
                     <label for="t5">عدم المشاركة في الأنشطة الصفية</label>
                 </div>
                 <div class="behavior-item">
-                    <input type="checkbox" class="negative-behavior" id="t6" value="الكتابة غير المنظمة والمشوهة">
+                    <input type="checkbox" class="academic-behavior" id="t6" value="الكتابة غير المنظمة والمشوهة">
                     <label for="t6">الكتابة غير المنظمة والمشوهة</label>
                 </div>
                 <div class="behavior-item">
-                    <input type="checkbox" class="negative-behavior" id="t7" value="عدم الاستعداد للاختبارات">
+                    <input type="checkbox" class="academic-behavior" id="t7" value="عدم الاستعداد للاختبارات">
                     <label for="t7">عدم الاستعداد للاختبارات والتقييمات</label>
                 </div>
                 <div class="behavior-item">
-                    <input type="checkbox" class="negative-behavior" id="t8" value="ضعف في مهارات القراءة">
+                    <input type="checkbox" class="academic-behavior" id="t8" value="ضعف في مهارات القراءة">
                     <label for="t8">ضعف في مهارات القراءة</label>
                 </div>
                 <div class="behavior-item">
-                    <input type="checkbox" class="negative-behavior" id="t9" value="ضعف في مهارات الكتابة">
+                    <input type="checkbox" class="academic-behavior" id="t9" value="ضعف في مهارات الكتابة">
                     <label for="t9">ضعف في مهارات الكتابة والإملاء</label>
                 </div>
                 <div class="behavior-item">
-                    <input type="checkbox" class="negative-behavior" id="t10" value="صعوبة في فهم المفاهيم الأساسية">
+                    <input type="checkbox" class="academic-behavior" id="t10" value="صعوبة في فهم المفاهيم الأساسية">
                     <label for="t10">صعوبة في فهم المفاهيم الأساسية</label>
                 </div>
                 <div class="behavior-item">
-                    <input type="checkbox" class="negative-behavior" id="t11" value="التراجع الملحوظ في المستوى الدراسي">
+                    <input type="checkbox" class="academic-behavior" id="t11" value="التراجع الملحوظ في المستوى الدراسي">
                     <label for="t11">التراجع الملحوظ في المستوى الدراسي</label>
                 </div>
                 <div class="behavior-item">
-                    <input type="checkbox" class="negative-behavior" id="t12" value="عدم متابعة الدروس السابقة">
+                    <input type="checkbox" class="academic-behavior" id="t12" value="عدم متابعة الدروس السابقة">
                     <label for="t12">عدم متابعة الدروس والمراجعة السابقة</label>
                 </div>
                 <div class="behavior-item">
-                    <input type="checkbox" class="negative-behavior" id="t13" value="الغياب المتكرر عن الحصص">
+                    <input type="checkbox" class="academic-behavior" id="t13" value="الغياب المتكرر عن الحصص">
                     <label for="t13">الغياب المتكرر عن الحصص</label>
                 </div>
                 <div class="behavior-item">
-                    <input type="checkbox" class="negative-behavior" id="t14" value="عدم الاحتفاظ بالدفاتر منظمة">
+                    <input type="checkbox" class="academic-behavior" id="t14" value="عدم الاحتفاظ بالدفاتر منظمة">
                     <label for="t14">عدم الاحتفاظ بالدفاتر والأوراق منظمة</label>
                 </div>
             </div>
@@ -1068,8 +1070,7 @@
             
             if (!employeeId) return;
             try {
-              const response = await fetch(`${GOOGLE_SHEET_URL}?action=list&accessCode=${encodeURIComponent(employeeId)}`);
-              const result = await response.json();
+              const result = await SBT.request(GOOGLE_SHEET_URL, 'list', {}, employeeId);
               if (!result.success) throw new Error(result.error || 'unauthorized');
                 // تسجيل دخول ناجح
                 document.getElementById('loginPage').classList.add('hidden');
@@ -1216,63 +1217,17 @@
         };
 
         // تعيين التاريخ الحالي
-        document.getElementById('date').valueAsDate = new Date();
+        document.getElementById('date').value = new Intl.DateTimeFormat('en-CA', {timeZone:'Asia/Muscat',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 
-        // منع التعارض بين السلوكيات السلبية والإيجابية
-        document.addEventListener('DOMContentLoaded', function() {
-            const negativeCheckboxes = document.querySelectorAll('.negative-behavior');
-            const positiveCheckboxes = document.querySelectorAll('.positive-behavior');
-
-            // عند اختيار سلوك سلبي
-            negativeCheckboxes.forEach(checkbox => {
-                checkbox.addEventListener('change', function() {
-                    if (this.checked) {
-                        // تعطيل جميع السلوكيات الإيجابية
-                        positiveCheckboxes.forEach(positive => {
-                            positive.disabled = true;
-                            positive.parentElement.style.opacity = '0.5';
-                            positive.parentElement.style.cursor = 'not-allowed';
-                        });
-                    } else {
-                        // التحقق إذا لم يتبق أي سلوك سلبي محدد
-                        const anyNegativeChecked = Array.from(negativeCheckboxes).some(cb => cb.checked);
-                        if (!anyNegativeChecked) {
-                            // إعادة تفعيل السلوكيات الإيجابية
-                            positiveCheckboxes.forEach(positive => {
-                                positive.disabled = false;
-                                positive.parentElement.style.opacity = '1';
-                                positive.parentElement.style.cursor = 'pointer';
-                            });
-                        }
-                    }
-                });
-            });
-
-            // عند اختيار سلوك إيجابي
-            positiveCheckboxes.forEach(checkbox => {
-                checkbox.addEventListener('change', function() {
-                    if (this.checked) {
-                        // تعطيل جميع السلوكيات السلبية
-                        negativeCheckboxes.forEach(negative => {
-                            negative.disabled = true;
-                            negative.parentElement.style.opacity = '0.5';
-                            negative.parentElement.style.cursor = 'not-allowed';
-                        });
-                    } else {
-                        // التحقق إذا لم يتبق أي سلوك إيجابي محدد
-                        const anyPositiveChecked = Array.from(positiveCheckboxes).some(cb => cb.checked);
-                        if (!anyPositiveChecked) {
-                            // إعادة تفعيل السلوكيات السلبية
-                            negativeCheckboxes.forEach(negative => {
-                                negative.disabled = false;
-                                negative.parentElement.style.opacity = '1';
-                                negative.parentElement.style.cursor = 'pointer';
-                            });
-                        }
-                    }
-                });
-            });
+        // كل تقرير يختص بنوع واحد من المتابعة.
+        document.addEventListener('DOMContentLoaded', () => {
+          const boxes = [...document.querySelectorAll('.negative-behavior,.positive-behavior,.academic-behavior')];
+          boxes.forEach(box => box.addEventListener('change', () => {
+            const selected = boxes.find(b=>b.checked);
+            boxes.forEach(b=>{b.disabled=!!selected && b.className!==selected.className;b.parentElement.style.opacity=b.disabled?'0.5':'1';});
+          }));
         });
+        function getReportType(){return document.querySelector('.academic-behavior:checked')?'academic':isPositiveReport()?'positive':'negative';}
 
         // تحميل قائمة الطلاب عند اختيار الشعبة
         // ضع رابط Web App هنا
@@ -1281,30 +1236,10 @@
         // تخزين إحصائيات الطلاب مؤقتاً
         let studentsStats = {};
 
-        // جلب الإحصائيات من Google Sheets مرة واحدة
-        async function fetchStudentsStats(className) {
-            if (!GOOGLE_SHEET_URL || GOOGLE_SHEET_URL === 'ضع_رابط_Web_App_هنا') return {};
-            try {
-                const response = await fetch(GOOGLE_SHEET_URL);
-                const reports = await response.json();
-                const stats = {};
-                reports.forEach(r => {
-                    // تطابق الشعبة (الشعبة محفوظة كـ "الخامس 1" بعد replace)
-                    const rClass = (r.className || '').replace(' ', '/');
-                    if (rClass !== className) return;
-                    const name = r.studentName;
-                    if (!name) return;
-                    if (!stats[name]) stats[name] = { neg: 0, pos: 0 };
-                    if (r.isPositive) stats[name].pos++;
-                    else stats[name].neg++;
-                });
-                return stats;
-            } catch (e) {
-                return {};
-            }
-        }
+        let studentsRequestVersion = 0;
 
         async function loadStudents() {
+            const version = ++studentsRequestVersion;
             const className = document.getElementById('className').value;
             const studentsSection = document.getElementById('studentsSection');
             const studentsGrid = document.getElementById('studentsGrid');
@@ -1322,7 +1257,9 @@
             studentNameInput.value = '';
 
             // جلب الإحصائيات أولاً
-            studentsStats = await fetchStudentsStats(className);
+            const stats = await fetchStudentsStats(className);
+            if(version !== studentsRequestVersion) return;
+            studentsStats = stats;
 
             studentsGrid.innerHTML = '';
             
@@ -1363,82 +1300,13 @@
             });
         }
 
-        // حفظ البيانات محليًا
-
-        async function saveData() {
-            const studentName = document.getElementById('studentName').value;
-            const className = document.getElementById('className').value;
-            const behaviors = getSelectedBehaviors();
-            
-            // فحص شامل للبيانات المطلوبة
-            if (!className) {
-                showToast('⚠️ يرجى اختيار الشعبة أولاً');
-                document.getElementById('className').focus();
-                return;
-            }
-            
-            if (!studentName) {
-                showToast('⚠️ يرجى اختيار الطالب');
-                return;
-            }
-            
-            if (behaviors.length === 0) {
-                showToast('⚠️ يرجى اختيار سلوك واحد على الأقل');
-                return;
-            }
-
-            if (!GOOGLE_SHEET_URL || GOOGLE_SHEET_URL === 'ضع_رابط_Web_App_هنا') {
-                showToast('⚠️ يرجى إعداد Google Sheets أولاً');
-                return;
-            }
-
-            const data = {
-                id: Date.now(),
-                className: className, // الآن مضمون أنها ليست فارغة
-                studentName: studentName,
-                date: document.getElementById('date').value,
-                behaviors: behaviors,
-                notes: document.getElementById('notes').value,
-                action: document.getElementById('action').value,
-                isPositive: isPositiveReport(),
-                timestamp: new Date().toISOString()
-            };
-
-            // عرض رسالة تحميل
-            showToast('⏳ جاري الحفظ...');
-
-            try {
-                const response = await fetch(GOOGLE_SHEET_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(data)
-                });
-                
-                // mode: no-cors يعني لن نحصل على response، لكن البيانات ستصل
-                showToast('✅ تم حفظ التقرير في السحابة');
-
-                // تحديث الإحصائيات تلقائياً بعد الحفظ
-                setTimeout(() => {
-                    const currentClass = document.getElementById('className').value;
-                    if (currentClass) loadStudents();
-                }, 1500);
-                
-            } catch (error) {
-                console.error('خطأ في الحفظ:', error);
-                showToast('❌ فشل الحفظ - تحقق من الاتصال');
-            }
-        }
-
         function viewReports() {
             window.location.href = 'reports.html';
         }
 
         function getSelectedBehaviors() {
             const behaviors = [];
-            const allCheckboxes = document.querySelectorAll('.negative-behavior:checked, .positive-behavior:checked');
+            const allCheckboxes = document.querySelectorAll('.negative-behavior:checked, .positive-behavior:checked, .academic-behavior:checked');
             allCheckboxes.forEach(cb => {
                 behaviors.push(cb.value);
             });
@@ -1450,19 +1318,7 @@
             return positiveCheckboxes.length > 0;
         }
 
-        function getBehaviorLevel(behavior) {
-            const level1Keywords = ['الإخلال', 'الحديث الجانبي', 'تناول المأكولات', 'شرب الماء', 'الخروج للحمام', 'الإساءة بالقول', 'عدم الإنصات', 'الإهمال'];
-            const level3Keywords = ['الشجار', 'النميمة', 'افتعال المشاكل', 'ألفاظ نابية'];
-            
-            for (let keyword of level3Keywords) {
-                if (behavior.includes(keyword)) return 3;
-            }
-            for (let keyword of level1Keywords) {
-                if (behavior.includes(keyword)) return 1;
-            }
-            return 2;
-        }
-
+        function getBehaviorLevel(behavior) { return SBT.level(behavior); }
         function escapeReportHTML(value = '') {
             return String(value).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
         }
@@ -1487,8 +1343,9 @@
                 day: '2-digit'
             });
 
-            const reportTitle = isPositive ? 'تقرير تقدير وتميّز طلابي' : 'تقرير متابعة سلوكية وتربوية';
-            const behaviorTitle = isPositive ? 'جوانب التميّز والإيجابيات' : 'الملاحظات السلوكية المرصودة';
+            const academic = getReportType()==='academic';
+            const reportTitle = academic ? 'تقرير متابعة تحصيلية وخطة دعم' : isPositive ? 'تقرير تقدير وتميّز طلابي' : 'تقرير متابعة سلوكية وتربوية';
+            const behaviorTitle = academic ? 'مهارات وجوانب تحتاج إلى متابعة' : isPositive ? 'جوانب التميّز والإيجابيات' : 'الملاحظات السلوكية المرصودة';
             const safeName = escapeReportHTML(studentName), safeClass = escapeReportHTML(className || 'غير محدد');
             const itemsHTML = behaviors.map((behavior,index) => `
                 <div class="report-item"><span class="report-item-index">${index + 1}</span><span>${escapeReportHTML(behavior)}</span></div>`).join('');
@@ -1497,7 +1354,7 @@
   <header class="report-top">
     <div class="report-mark">${isPositive ? '⭐' : '📋'}</div>
     <div class="report-heading"><h2>${reportTitle}</h2><p>مادة اللغة العربية – الصف الخامس الأساسي</p></div>
-    <span class="report-kind">${isPositive ? 'تقرير إيجابي' : 'متابعة تربوية'}</span>
+    <span class="report-kind">${academic ? 'متابعة تحصيلية' : isPositive ? 'تقرير إيجابي' : 'متابعة تربوية'}</span>
   </header>
   <section class="report-meta">
     <div class="meta-card"><small>اسم الطالب</small><strong>${safeName}</strong></div>
@@ -1559,14 +1416,6 @@
             const action = document.getElementById('action').value;
             const isPositive = isPositiveReport();
 
-            // تشخيص - سيظهر في Console (اضغط F12)
-            console.log('=== shareWhatsApp - تشخيص ===');
-            console.log('الطالب:', studentName);
-            console.log('الشعبة:', className);
-            console.log('التاريخ:', date);
-            console.log('نوع التقرير:', isPositive ? 'إيجابي' : 'سلبي');
-            console.log('============================');
-
             // تحقق من البيانات
             if (!studentName || !date || behaviors.length === 0) {
                 showToast('⚠️ يرجى إكمال البيانات المطلوبة');
@@ -1602,23 +1451,24 @@
             } else {
                 // رسالة للتقرير السلبي
                 message = `━━━━━━━━━━
-📋 *تقرير السلوك الطلابي*
+📋 *تقرير متابعة الطالب*
 ━━━━━━━━━━
 📅 *التاريخ:* ${formattedDate}
 🏫 *الشعبة:* ${className || 'غير محدد'}
 👤 *الطالب:* ${studentName}
 ━━━━━━━━━━
-📌 *السلوكيات المخالفة:*
+📌 *الجوانب المرصودة:*
 ━━━━━━━━━━
 `;
 
                 behaviors.forEach((behavior, index) => {
-                    const level = getBehaviorLevel(behavior);
+                    const level = getReportType()==='academic' ? 0 : getBehaviorLevel(behavior);
                     let badge = '';
                     
                     if (level === 1) badge = '🔵 نصح';
                     else if (level === 2) badge = '🟠 تنبيه';
-                    else badge = '🔴 إنذار';
+                    else if(level===3) badge = '🔴 إنذار';
+                    else badge = '📘 متابعة تحصيلية';
                     
                     message += `${index + 1}. ${badge}\n   ${behavior}\n\n`;
                 });
@@ -1722,22 +1572,23 @@ ${action}
                 message = `السلام عليكم ورحمة الله وبركاته
 ولي أمر الطالب/ة: *${studentName}*
 ━━━━━━━━━━
-📋 *تقرير السلوك الطلابي*
+📋 *تقرير متابعة الطالب*
 ━━━━━━━━━━
 📅 *التاريخ:* ${formattedDate}
 🏫 *الشعبة:* ${className || 'غير محدد'}
 ━━━━━━━━━━
-📌 *السلوكيات المخالفة:*
+📌 *الجوانب المرصودة:*
 ━━━━━━━━━━
 `;
 
                 behaviors.forEach((behavior, index) => {
-                    const level = getBehaviorLevel(behavior);
+                    const level = getReportType()==='academic' ? 0 : getBehaviorLevel(behavior);
                     let badge = '';
                     
                     if (level === 1) badge = '🔵 نصح';
                     else if (level === 2) badge = '🟠 تنبيه';
-                    else badge = '🔴 إنذار';
+                    else if(level===3) badge = '🔴 إنذار';
+                    else badge = '📘 متابعة تحصيلية';
                     
                     message += `${index + 1}. ${badge}\n   ${behavior}\n\n`;
                 });
@@ -1811,8 +1662,7 @@ function openWhatsAppSmart(message, phone=''){
 }
 function accessCode_(){ return sessionStorage.getItem('accessCode') || ''; }
 async function apiList_(){
-  const r = await fetch(`${GOOGLE_SHEET_URL}?action=list&accessCode=${encodeURIComponent(accessCode_())}`, {cache:'no-store'});
-  const j = await r.json();
+  const j = await SBT.request(GOOGLE_SHEET_URL, 'list');
   if(!j.success) throw new Error(j.error || 'تعذر تحميل البيانات');
   return j.records || [];
 }
@@ -1839,15 +1689,16 @@ async function saveData(){
   try {
     const payload={action:'create',accessCode:accessCode_(),className,studentName,date,behaviors,
       notes:document.getElementById('notes').value,actionTaken:document.getElementById('action').value,
-      isPositive:isPositiveReport()};
-    const response=await fetch(GOOGLE_SHEET_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
-    const result=await response.json();
+      isPositive:isPositiveReport(),reportType:getReportType()};
+    const result=await SBT.request(GOOGLE_SHEET_URL, 'create', payload);
     if(!result.success) throw new Error(result.error || 'فشل الحفظ');
     showToast('✅ تم حفظ التقرير بنجاح');
-    await loadStudents();
+    const selected=studentName; await loadStudents();
+    if(document.getElementById('className').value===className) { document.getElementById('studentName').value=selected; document.querySelectorAll('.student-chip').forEach(c=>c.classList.toggle('selected',c.title.split('\n')[0]===selected)); }
   } catch(e){ showToast(`❌ ${e.message || 'تعذر الحفظ'}`); }
   finally { if(button) button.disabled=false; }
 }
 </script>
 </body>
 </html>
+
