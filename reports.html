@@ -388,9 +388,10 @@
             }
         }
     </style>
+<script src="sbt-common.js"></script><style>.search-box{min-width:0}.toast{max-width:calc(100vw - 24px);overflow-wrap:anywhere}.behavior-badge{flex-shrink:0}@media(max-width:400px){body{padding:10px}.report-card{padding:16px}header{padding:20px}header h1{font-size:1.8rem}}</style>
 </head>
 <body>
-    <div id="toast" class="toast"></div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <div class="container">
         <header>
@@ -412,7 +413,7 @@
             </div>
         </div>
 
-        <div class="controls">
+        <div class="controls"><button class="btn" onclick="loadReports()">تحديث التقارير</button><button class="btn" onclick="SBT.logout()">تسجيل الخروج</button>
             <button class="btn btn-primary" onclick="goBack()">
                 ⬅️ العودة للرئيسية
             </button>
@@ -424,7 +425,7 @@
             <div class="filter-buttons">
                 <button class="filter-btn active" onclick="setFilter('all', this)">الكل</button>
                 <button class="filter-btn" onclick="setFilter('positive', this)">إيجابية</button>
-                <button class="filter-btn" onclick="setFilter('negative', this)">سلبية</button>
+                <button class="filter-btn" onclick="setFilter('negative', this)">سلبية</button><button class="filter-btn" onclick="setFilter('academic', this)">تحصيلية</button>
             </div>
         </div>
 
@@ -441,10 +442,7 @@
         let allReports = [];
         function accessCode_(){ return sessionStorage.getItem('accessCode') || ''; }
         async function api_(action, payload = {}) {
-            const response = action === 'list'
-              ? await fetch(`${GOOGLE_SHEET_URL}?action=list&accessCode=${encodeURIComponent(accessCode_())}`, {cache:'no-store'})
-              : await fetch(GOOGLE_SHEET_URL, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({action, accessCode:accessCode_(), ...payload})});
-            const result = await response.json();
+            const result = await SBT.request(GOOGLE_SHEET_URL, action, payload);
             if (!result.success) throw new Error(result.error || 'تعذر تنفيذ العملية');
             return result;
         }
@@ -478,20 +476,20 @@
                 showToast('⏳ جاري تحميل التقارير...');
                 
                 const result = await api_('list');
-                const reports = result.records;
+                const reports = result.records || [];
                 allReports = reports;
                 
                 // تحديث الإحصائيات
                 document.getElementById('totalReports').textContent = reports.length;
                 document.getElementById('positiveReports').textContent = reports.filter(r => r.isPositive).length;
-                document.getElementById('negativeReports').textContent = reports.filter(r => !r.isPositive).length;
+                document.getElementById('negativeReports').textContent = reports.filter(r => !r.isPositive && r.reportType!=='academic').length;
                 
                 filterReports();
                 
             } catch (error) {
                 console.error('خطأ في التحميل:', error);
                 showToast('❌ فشل تحميل التقارير');
-                displayReports([]);
+                document.getElementById('reportsContainer').textContent = 'تعذر تحميل التقارير. تحقق من الاتصال ورمز الدخول، ثم أعد المحاولة.';
             }
         }
 
@@ -511,7 +509,7 @@
                     const matchesFilter = 
                         currentFilter === 'all' ? true :
                         currentFilter === 'positive' ? report.isPositive :
-                        !report.isPositive;
+                        currentFilter === 'academic' ? report.reportType==='academic' : !report.isPositive && report.reportType!=='academic';
                     
                     return matchesSearch && matchesFilter;
                 });
@@ -551,7 +549,7 @@
                             </div>
                         </div>
                         <div class="report-type ${report.isPositive ? 'positive' : 'negative'}">
-                            ${report.isPositive ? '⭐ إيجابي' : '⚠️ سلبي'}
+                            ${report.reportType==='academic' ? '📘 تحصيلي' : report.isPositive ? '⭐ إيجابي' : '⚠️ سلبي'}
                         </div>
                     </div>
                     
@@ -561,8 +559,8 @@
                         </strong>
                         ${report.behaviors.map(behavior => `
                             <div class="behavior-item">
-                                <span class="behavior-badge ${getBadgeClass(behavior, report.isPositive)}">
-                                    ${getBadgeText(behavior, report.isPositive)}
+                                <span class="behavior-badge ${getBadgeClass(behavior, report.isPositive, report.reportType)}">
+                                    ${getBadgeText(behavior, report.isPositive, report.reportType)}
                                 </span>
                                 <span>${escapeHTML(behavior)}</span>
                             </div>
@@ -576,21 +574,21 @@
                         </div>
                     ` : ''}
                     
-                    ${report.action ? `
+                    ${report.actionTaken ? `
                         <div style="background: #fffbf0; padding: 12px; border-radius: 8px; margin-bottom: 15px; border-right: 3px solid var(--warning);">
                             <strong>⚖️ الإجراء:</strong><br>
-                            <span style="color: var(--text-secondary);">${escapeHTML(report.action)}</span>
+                            <span style="color: var(--text-secondary);">${escapeHTML(report.actionTaken)}</span>
                         </div>
                     ` : ''}
                     
                     <div class="report-actions">
-                        <button class="action-btn btn-whatsapp" onclick="shareToWhatsApp('${report.timestamp}')">
+                        <button class="action-btn btn-whatsapp" onclick="shareToWhatsApp('${escapeHTML(report.id)}')">
                             📱 واتساب
                         </button>
-                        <button class="action-btn btn-edit" onclick="editReport('${report.id}')">
+                        <button class="action-btn btn-edit" onclick="editReport('${escapeHTML(report.id)}')">
                             ✏️ تعديل
                         </button>
-                        <button class="action-btn btn-delete" onclick="deleteReport('${report.id}')">
+                        <button class="action-btn btn-delete" onclick="deleteReport('${escapeHTML(report.id)}')">
                             🗑️ حذف
                         </button>
                     </div>
@@ -598,35 +596,8 @@
             `).join('');
         }
 
-        function getBadgeClass(behavior, isPositive) {
-            if (isPositive) return 'badge-positive';
-            
-            const level1 = ['الحديث', 'الضحك', 'التحرك', 'اللعب', 'التشويش', 'عدم الإنصات', 'المقاطعة'];
-            const level3 = ['الشجار', 'النميمة', 'المشاكل', 'التنمر', 'الاستيلاء'];
-            
-            for (let keyword of level3) {
-                if (behavior.includes(keyword)) return 'badge-alert';
-            }
-            for (let keyword of level1) {
-                if (behavior.includes(keyword)) return 'badge-advice';
-            }
-            return 'badge-warning';
-        }
-
-        function getBadgeText(behavior, isPositive) {
-            if (isPositive) return '⭐';
-            
-            const level1 = ['الحديث', 'الضحك', 'التحرك', 'اللعب', 'التشويش', 'عدم الإنصات', 'المقاطعة'];
-            const level3 = ['الشجار', 'النميمة', 'المشاكل', 'التنمر', 'الاستيلاء'];
-            
-            for (let keyword of level3) {
-                if (behavior.includes(keyword)) return 'إنذار';
-            }
-            for (let keyword of level1) {
-                if (behavior.includes(keyword)) return 'نصح';
-            }
-            return 'تنبيه';
-        }
+        function getBadgeClass(behavior, positive, type) {if(type==='academic') return 'badge-advice';return positive ? 'badge-positive' : ['','badge-advice','badge-warning','badge-alert'][SBT.level(behavior)];}
+        function getBadgeText(behavior, positive, type) {if(type==='academic') return 'متابعة تحصيلية';return positive ? '⭐' : ['','نصح','تنبيه','إنذار'][SBT.level(behavior)];}
 
         function setFilter(filter, button) {
             currentFilter = filter;
@@ -654,7 +625,7 @@
                 allReports = allReports.filter(r => r.id !== id);
                 document.getElementById('totalReports').textContent = allReports.length;
                 document.getElementById('positiveReports').textContent = allReports.filter(r=>r.isPositive).length;
-                document.getElementById('negativeReports').textContent = allReports.filter(r=>!r.isPositive).length;
+                document.getElementById('negativeReports').textContent = allReports.filter(r=>!r.isPositive && r.reportType!=='academic').length;
                 filterReports();
                 showToast('✅ تم حذف التقرير');
                 
@@ -669,17 +640,17 @@
             if (!report) return;
             const notes = prompt('عدّل الملاحظات:', report.notes || '');
             if (notes === null) return;
-            const actionTaken = prompt('عدّل الإجراء المتخذ:', report.action || '');
+            const actionTaken = prompt('عدّل الإجراء المتخذ:', report.actionTaken || '');
             if (actionTaken === null) return;
             api_('update', {...report, notes, actionTaken}).then(() => {
-                report.notes = notes; report.action = actionTaken;
+                report.notes = notes; report.actionTaken = actionTaken;
                 filterReports(); showToast('✅ تم تعديل التقرير');
             }).catch(e => showToast(`❌ ${e.message}`));
         }
 
-        async function shareToWhatsApp(timestamp) {
+        async function shareToWhatsApp(id) {
             try {
-                const report = allReports.find(r => r.timestamp === timestamp);
+                const report = allReports.find(r => r.id === id);
                 
                 if (!report) {
                     showToast('⚠️ لم يتم العثور على التقرير');
@@ -691,7 +662,7 @@
                 if (report.isPositive) {
                     message += `⭐ *تقرير تقدير وتميز طلابي* ⭐\n\n`;
                 } else {
-                    message += `📋 *تقرير السلوك الطلابي* 📋\n\n`;
+                    message += `📋 *تقرير متابعة الطالب* 📋\n\n`;
                 }
                 
                 message += `📅 التاريخ: ${new Date(report.date).toLocaleDateString('ar-EG')}\n🏫 الشعبة: ${report.className || 'غير محدد'}\n\n`;
@@ -699,7 +670,7 @@
                 if (report.isPositive) {
                     message += `✨ *نقاط التميز:*\n`;
                 } else {
-                    message += `📌 *السلوكيات المخالفة:*\n`;
+                    message += `📌 *الجوانب المرصودة:*\n`;
                 }
                 
                 report.behaviors.forEach((behavior, index) => {
@@ -707,7 +678,7 @@
                 });
                 
                 if (report.notes) message += `\n\n📝 *الملاحظات:*\n${report.notes}`;
-                if (report.action) message += `\n\n⚖️ *الإجراء:*\n${report.action}`;
+                if (report.actionTaken) message += `\n\n⚖️ *الإجراء:*\n${report.actionTaken}`;
                 
                 openWhatsAppSmart(message);
                 
@@ -732,7 +703,8 @@
         }
 
         // تحميل التقارير عند فتح الصفحة
-        window.addEventListener('load', loadReports);
+        window.addEventListener('load', () => { if(!sessionStorage.getItem('accessCode')) location.replace('index.html'); else loadReports(); });
     </script>
 </body>
 </html>
+
