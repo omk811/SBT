@@ -398,6 +398,8 @@
         .student-report.positive { --report-color:#247a47; --report-soft:#edf9f1; }
         .student-report.negative { --report-color:#b85a18; --report-soft:#fff6ed; }
         .report-top { display:grid; grid-template-columns:72px 1fr auto; align-items:center; gap:18px; padding:20px; border:2px solid var(--report-color); border-radius:18px; background:linear-gradient(135deg,#fff,var(--report-soft)); }
+        .report-top::before { content:none; }
+        .report-top { box-shadow:none; margin-bottom:0; }
         .report-mark { width:64px; height:64px; display:grid; place-items:center; border-radius:18px; background:var(--report-color); color:#fff; font-size:2rem; }
         .report-heading h2 { margin:0; color:var(--report-color); font:700 1.8rem 'Amiri',serif; }
         .report-heading p { margin:2px 0 0; color:#5d6a62; }
@@ -502,7 +504,7 @@
             }
             
             #loginPage,
-            header,
+            .container > header,
             .section-card,
             .buttons-row,
             #studentsSection,
@@ -524,18 +526,20 @@
                 padding: 0 !important;
                 margin: 0 !important;
                 background: white !important;
-                page-break-inside: avoid !important;
-                page-break-after: avoid !important;
+                page-break-inside: auto !important;
+                page-break-after: auto !important;
                 height: auto !important;
             }
             
-            #reportOutput * {
-                page-break-inside: avoid !important;
-            }
+            .report-top,.report-meta,.report-item,.report-signatures { break-inside:avoid; }
+            .report-section { break-inside:auto; }
 
             .student-report { font-size:11pt !important; }
             .student-report, .student-report * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
-            .report-top { border-radius:8px !important; padding:14px !important; }
+            .report-top { display:grid !important; grid-template-columns:64px minmax(0,1fr) auto !important; border-radius:18px !important; padding:18px !important; }
+            .report-meta { grid-template-columns:2fr 1fr 1fr !important; }
+            .report-kind { grid-column:auto !important; }
+            .report-section { break-inside:auto !important; }
             .report-heading h2 { font-size:20pt !important; }
             .report-section { border-radius:6px !important; }
             
@@ -551,7 +555,7 @@
             }
         }
 
-        @media (max-width: 768px) {
+        @media screen and (max-width: 768px) {
             header h1 {
                 font-size: 1.8rem;
             }
@@ -1398,7 +1402,8 @@
                 showToast('⚠️ يرجى إنشاء التقرير أولاً');
                 return;
             }
-            window.print();
+            const ready = document.fonts ? document.fonts.ready : Promise.resolve();
+            ready.then(() => window.print());
         }
 
         function shareWhatsApp() {
