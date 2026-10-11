@@ -389,7 +389,48 @@
         }
     </style>
 <script src="sbt-common.js"></script><style>.search-box{min-width:0}.toast{max-width:calc(100vw - 24px);overflow-wrap:anywhere}.behavior-badge{flex-shrink:0}@media(max-width:400px){body{padding:10px}.report-card{padding:16px}header{padding:20px}header h1{font-size:1.8rem}}</style>
-</head>
+<style>
+        .student-report { --report-color:#1a4d2e; --report-soft:#edf7f1; max-width:900px; margin:auto; color:#17231c; font-size:1rem; line-height:1.8; white-space:normal; }
+        .student-report.positive { --report-color:#247a47; --report-soft:#edf9f1; }
+        .student-report.negative { --report-color:#b85a18; --report-soft:#fff6ed; }
+        .report-top { display:grid; grid-template-columns:72px 1fr auto; align-items:center; gap:18px; padding:20px; border:2px solid var(--report-color); border-radius:18px; background:linear-gradient(135deg,#fff,var(--report-soft)); }
+        .report-top::before { content:none; }
+        .report-top { box-shadow:none; margin-bottom:0; }
+        .report-mark { width:64px; height:64px; display:grid; place-items:center; border-radius:18px; background:var(--report-color); color:#fff; font-size:2rem; }
+        .report-heading h2 { margin:0; color:var(--report-color); font:700 1.8rem 'Amiri',serif; }
+        .report-heading p { margin:2px 0 0; color:#5d6a62; }
+        .report-kind { padding:8px 14px; border-radius:999px; color:#fff; background:var(--report-color); font-weight:800; white-space:nowrap; }
+        .report-meta { display:grid; grid-template-columns:2fr 1fr 1fr; gap:12px; margin:18px 0; }
+        .meta-card { padding:12px 16px; border:1px solid #dce5df; border-radius:12px; background:#fff; }
+        .meta-card small { display:block; color:#66736b; font-size:.78rem; }
+        .meta-card strong { color:#1d3427; font-size:1rem; }
+        .report-section { margin-top:14px; border:1px solid #dce5df; border-radius:14px; overflow:hidden; break-inside:avoid; }
+        .report-section-title { padding:9px 15px; color:#fff; background:var(--report-color); font-weight:800; }
+        .report-items { display:grid; gap:9px; padding:14px; background:#fff; }
+        .report-item { display:flex; align-items:flex-start; gap:10px; padding:10px 12px; border-radius:10px; background:var(--report-soft); }
+        .report-item-index { flex:0 0 28px; height:28px; display:grid; place-items:center; border-radius:50%; color:#fff; background:var(--report-color); font-weight:800; font-size:.8rem; }
+        .report-text { padding:13px 16px; background:#fff; white-space:pre-wrap; }
+        .report-message { margin-top:15px; padding:13px 16px; border-right:5px solid var(--report-color); border-radius:10px; background:var(--report-soft); color:#30483a; }
+        .report-signatures { display:grid; grid-template-columns:1fr 1fr; gap:32px; margin-top:24px; text-align:center; }
+        .signature-line { height:40px; border-bottom:1px solid #66736b; margin-bottom:5px; }
+        .report-credit { margin-top:18px; padding-top:10px; border-top:1px dashed #bdc9c1; text-align:center; color:#5d6a62; font-size:.85rem; }
+
+
+#savedPrintOutput{display:none;}
+@media print {
+ @page{size:A4 portrait;margin:10mm;}
+ html,body{height:auto;overflow:visible;background:white!important;margin:0!important;padding:0!important;}
+ body>.container,#toast{display:none!important;}
+ #savedPrintOutput{display:block!important;direction:rtl;font-family:'Cairo',sans-serif;}
+ #savedPrintOutput,#savedPrintOutput *{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
+ .student-report{font-size:11pt;}
+ .report-top{grid-template-columns:64px minmax(0,1fr) auto;padding:18px;}
+ .report-heading h2{font-size:20pt;}
+ .report-meta{grid-template-columns:2fr 1fr 1fr;}
+ .report-top,.report-meta,.report-item,.report-signatures{break-inside:avoid;}
+ .report-section{break-inside:auto;}
+}
+</style></head>
 <body>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
@@ -434,6 +475,7 @@
         </div>
     </div>
 
+    <div id="savedPrintOutput"></div>
     <script>
         // ضع نفس رابط Web App هنا
         const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbwIR8Utx0pbm02LfF45HR1JmUkgXSZwfGE7xS29Opypii9KUbp1NgET2ShwyOaewNY/exec';
@@ -581,7 +623,7 @@
                         </div>
                     ` : ''}
                     
-                    <div class="report-actions">
+                    <div class="report-actions"><button class="action-btn btn-edit" onclick="printSavedReport('${escapeHTML(report.id)}')">🖨️ طباعة</button>
                         <button class="action-btn btn-whatsapp" onclick="shareToWhatsApp('${escapeHTML(report.id)}')">
                             📱 واتساب
                         </button>
@@ -686,6 +728,27 @@
                 console.error('خطأ:', error);
                 showToast('❌ فشل إرسال الرسالة');
             }
+        }
+
+
+        async function printSavedReport(id) {
+          const report=allReports.find(r=>r.id===id);
+          if(!report){showToast('لم يتم العثور على التقرير');return;}
+          const academic=report.reportType==='academic',positive=report.isPositive;
+          const title=academic?'تقرير متابعة تحصيلية وخطة دعم':positive?'تقرير تقدير وتميّز طلابي':'تقرير متابعة سلوكية وتربوية';
+          const heading=academic?'مهارات وجوانب تحتاج إلى متابعة':positive?'جوانب التميّز والإيجابيات':'الملاحظات السلوكية المرصودة';
+          const section=(title,text)=>text?`<section class="report-section"><div class="report-section-title">${title}</div><div class="report-text">${escapeHTML(text)}</div></section>`:'';
+          const date=new Date(report.date).toLocaleDateString('ar-EG',{year:'numeric',month:'2-digit',day:'2-digit'});
+          document.getElementById('savedPrintOutput').innerHTML=`<article class="student-report ${positive?'positive':'negative'}">
+           <header class="report-top"><div class="report-mark">${positive?'⭐':'📋'}</div><div class="report-heading"><h2>${title}</h2><p>مادة اللغة العربية – الصف الخامس الأساسي</p></div><span class="report-kind">${academic?'متابعة تحصيلية':positive?'تقرير إيجابي':'متابعة تربوية'}</span></header>
+           <section class="report-meta"><div class="meta-card"><small>اسم الطالب</small><strong>${escapeHTML(report.studentName)}</strong></div><div class="meta-card"><small>الشعبة</small><strong>${escapeHTML(report.className)}</strong></div><div class="meta-card"><small>التاريخ</small><strong>${date}</strong></div></section>
+           <section class="report-section"><div class="report-section-title">${heading}</div><div class="report-items">${report.behaviors.map((b,i)=>`<div class="report-item"><span class="report-item-index">${i+1}</span><span>${escapeHTML(b)}</span></div>`).join('')}</div></section>
+           ${section('ملاحظات المعلم',report.notes)}${!positive?section('الإجراء التربوي المتخذ',report.actionTaken):''}
+           <div class="report-message">${positive?'نثمّن هذا الأداء المتميّز، ونشكر الأسرة على دعمها المستمر، مع تمنياتنا للطالب بمزيد من النجاح.':'نأمل تعاون الأسرة في متابعة الطالب وتعزيز السلوك الإيجابي، بما يسهم في تقدمه الدراسي والتربوي.'}</div>
+           <div class="report-signatures"><div><div class="signature-line"></div><strong>توقيع المعلم</strong></div><div><div class="signature-line"></div><strong>توقيع ولي الأمر</strong></div></div>
+           <footer class="report-credit">إعداد ومتابعة: <strong>الأستاذ خليل البلوشي</strong></footer></article>`;
+          if(document.fonts) await document.fonts.ready;
+          window.print();
         }
 
         function goBack() {
